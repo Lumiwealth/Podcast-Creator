@@ -107,6 +107,31 @@ def generate():
     DRAFTS[draft_id] = {"idea": idea, "title": title, "script": script}
     return redirect(url_for("review", draft_id=draft_id))
 
+@app.route("/generate_and_publish", methods=["POST"])
+def generate_and_publish():
+    # Generate content
+    idea = request.form["idea"].strip()
+    title = generate_title(idea)
+    script = generate_script(title, idea)
+    
+    # Generate MP3
+    chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
+    audio_parts = [uploader.tts_chunk(i, c)[1] for i, c in enumerate(chunks)]
+    unique_id = str(uuid.uuid4())[:4]
+    mp3_path = Path("audio") / f"{title.replace(' ', '_')}_{unique_id}.mp3"
+    mp3_path.parent.mkdir(exist_ok=True)
+    with mp3_path.open("wb") as f:
+        for part in audio_parts:
+            f.write(part)
+
+    # Upload to Transistor
+    up_url, audio_url = uploader.transistor_authorise(mp3_path.name)
+    uploader.transistor_put_audio(up_url, mp3_path)
+    ep_id = uploader.transistor_create_episode(title, script, audio_url)
+
+    flash(f'Episode drafted on Transistor (ID {ep_id}). <a href="https://dashboard.transistor.fm/shows/private-for-lumiwealth-podcast" target="_blank">Publish your episode here</a>')
+    return redirect(url_for("home"))
+
 @app.route("/review/<draft_id>")
 def review(draft_id):
     d = DRAFTS.get(draft_id)

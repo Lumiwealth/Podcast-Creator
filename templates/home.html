@@ -6,6 +6,9 @@
         <label class="form-label" for="idea">Episode idea / talking points</label>
         <textarea class="form-control" id="idea" name="idea" rows="6" required></textarea>
     </div>
-    <button class="btn btn-primary" type="submit" onclick="this.disabled=true; this.innerHTML='Generating... (this may take a minute)'; this.form.submit();">Generate Draft</button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary flex-grow-1" type="submit" onclick="this.disabled=true; this.innerHTML='Generating... (this may take a minute)'; this.form.submit();">Generate Draft</button>
+        <button class="btn btn-success flex-grow-1" formaction="/generate_and_publish" formmethod="post" onclick="this.disabled=true; this.innerHTML='Publishing... (this may take a few minutes)'; this.form.submit();">Generate & Publish</button>
+    </div>
 </form>
 {% endblock %}
