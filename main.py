@@ -139,7 +139,6 @@ def generate_and_publish():
             results.append(f"Published episode: {title} (ID: {ep_id})")
         except Exception as e:
             results.append(f"Failed to publish idea: {idea[:50]}... Error: {str(e)}")
-            continue
 
     flash(f'Episodes processed:<br>{"<br>".join(results)}<br><a href="https://dashboard.transistor.fm/shows/private-for-lumiwealth-podcast" target="_blank">View your published episodes</a>')
     return redirect(url_for("home"))
