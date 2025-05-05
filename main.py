@@ -113,14 +113,14 @@ def generate():
 def generate_and_publish():
     idea = request.form["idea"].strip()
     results = []
-    
+
     if idea:
-            
+
         try:
             # Generate content
             script = generate_script(idea.strip())
             title = extract_title_from_script(script)
-            
+
             # Generate MP3
             chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
             audio_parts = [uploader.tts_chunk(i, c)[1] for i, c in enumerate(chunks)]
@@ -254,8 +254,8 @@ def generate_and_upload(draft_id):
     uploader.transistor_put_audio(up_url, mp3_path)
     ep_id = uploader.transistor_create_episode(title, script, audio_url)
 
-    flash(f'Episode drafted on Transistor (ID {ep_id}). <a href="https://dashboard.transistor.fm/shows/private-for-lumiwealth-podcast" target="_blank">Publish your episode here</a>')
-    return redirect(url_for("home"))
+    flash(f'✅ Draft uploaded to Transistor (ID {ep_id})')
+    return redirect(url_for("review", draft_id=draft_id, uploaded=1))
 
 @app.route("/approve/<draft_id>", methods=["POST"])
 def approve(draft_id):

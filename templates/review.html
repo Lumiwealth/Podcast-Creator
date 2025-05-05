@@ -6,6 +6,11 @@
 </div>
 
 <form method="post" action="/approve/{{ draft_id }}" class="card shadow-sm p-4">
+    {% if request.args.get('uploaded') %}
+    <div class="alert alert-success">
+        Episode is on Transistor! You can tweak the script here and re-upload, or just head over and hit "Publish".
+    </div>
+    {% endif %}
     <div class="mb-3">
         <label class="form-label">Episode title (editable)</label>
         <input class="form-control" name="title" value="{{ title }}" required />
@@ -15,12 +20,12 @@
         <textarea class="form-control" name="script" rows="18" required>{{ script }}</textarea>
     </div>
     <div class="primary-actions d-flex gap-2">
-        {% if request.args.get('mp3_ready') %}
-            <a href="/audio/{{ draft['mp3_filename'] }}" download class="btn btn-info btn-lg">Download MP3</a>
+        {% if request.args.get('mp3_ready') or request.args.get('uploaded') %}
+            <a href="/audio/{{ draft['mp3_filename'] }}" download target="_blank" class="btn btn-info btn-lg">Download MP3</a>
             <button formaction="/upload/{{ draft_id }}" formmethod="post" class="btn btn-success btn-lg" onclick="this.disabled=true; this.innerHTML='Publishing...'; this.form.submit();">Upload to Transistor</button>
         {% else %}
             <button formaction="/generate_mp3/{{ draft_id }}" formmethod="post" class="btn btn-primary btn-lg" onclick="this.disabled=true; this.innerHTML='Generating MP3...'; this.form.submit();">Generate MP3</button>
-            <button formaction="/generate_and_upload/{{ draft_id }}" formmethod="post" class="btn btn-success btn-lg" onclick="this.disabled=true; this.innerHTML='Generating & Uploading...'; this.form.submit();">Generate & Upload</button>
+            <button formaction="/generate_and_upload/{{ draft_id }}" formmethod="post" class="btn btn-success btn-lg" onclick="this.disabled=true; this.innerHTML='Generating MP3 & Uploading Draft...'; this.form.submit();">Generate MP3 & Upload Draft</button>
         {% endif %}
     </div>
     <div class="mt-4">
