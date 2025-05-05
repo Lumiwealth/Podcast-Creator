@@ -87,7 +87,7 @@ def generate_script(title: str, idea: str) -> str:
 Write a ~15000 word pure narrative script with NO audio direction markers."""}, #Increased word count
         {"role": "user", "content": f"Title: {title}\n\nCore idea: {idea}\n\nCreate a compelling podcast episode that explores this topic through vivid storytelling and unexpected connections, building to a powerful insight."},
     ]
-    resp = chat_create(messages, temperature=0.7, max_tokens=10000)
+    resp = chat_create(messages, temperature=0.7, max_tokens=4096)
     return resp.choices[0].message.content.strip()
 
 # ─────────────────────────────────────────────────────────────────────────────
