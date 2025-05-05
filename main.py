@@ -111,28 +111,40 @@ def generate():
 
 @app.route("/generate_and_publish", methods=["POST"])
 def generate_and_publish():
-    # Generate content
-    idea = request.form["idea"].strip()
-    script = generate_script(idea)
-    title = extract_title_from_script(script)
+    # Handle multiple ideas
+    ideas = request.form["idea"].strip().split("\n")
+    results = []
     
-    # Generate MP3
-    chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
-    audio_parts = [uploader.tts_chunk(i, c)[1] for i, c in enumerate(chunks)]
-    unique_id = str(uuid.uuid4())[:4]
-    mp3_path = Path("audio") / f"{title.replace(' ', '_')}_{unique_id}.mp3"
-    mp3_path.parent.mkdir(exist_ok=True)
-    with mp3_path.open("wb") as f:
-        for part in audio_parts:
-            f.write(part)
+    for idea in ideas:
+        if not idea.strip():
+            continue
+            
+        try:
+            # Generate content
+            script = generate_script(idea.strip())
+            title = extract_title_from_script(script)
+            
+            # Generate MP3
+            chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
+            audio_parts = [uploader.tts_chunk(i, c)[1] for i, c in enumerate(chunks)]
+            unique_id = str(uuid.uuid4())[:4]
+            mp3_path = Path("audio") / f"{title.replace(' ', '_')}_{unique_id}.mp3"
+            mp3_path.parent.mkdir(exist_ok=True)
+            with mp3_path.open("wb") as f:
+                for part in audio_parts:
+                    f.write(part)
 
-    # Upload to Transistor and publish
-    up_url, audio_url = uploader.transistor_authorise(mp3_path.name)
-    uploader.transistor_put_audio(up_url, mp3_path)
-    ep_id = uploader.transistor_create_episode(title, script, audio_url)
-    uploader.transistor_publish_episode(ep_id)  # Actually publish the episode
+            # Upload to Transistor and publish
+            up_url, audio_url = uploader.transistor_authorise(mp3_path.name)
+            uploader.transistor_put_audio(up_url, mp3_path)
+            ep_id = uploader.transistor_create_episode(title, script, audio_url)
+            uploader.transistor_publish_episode(ep_id)
+            results.append(f"Published episode: {title} (ID: {ep_id})")
+        except Exception as e:
+            results.append(f"Failed to publish idea: {idea[:50]}... Error: {str(e)}")
+            continue
 
-    flash(f'Episode published on Transistor (ID {ep_id}). <a href="https://dashboard.transistor.fm/shows/private-for-lumiwealth-podcast" target="_blank">View your published episode</a>')
+    flash(f'Episodes processed:<br>{"<br>".join(results)}<br><a href="https://dashboard.transistor.fm/shows/private-for-lumiwealth-podcast" target="_blank">View your published episodes</a>')
     return redirect(url_for("home"))
 
 @app.route("/review/<draft_id>")
