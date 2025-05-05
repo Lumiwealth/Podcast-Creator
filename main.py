@@ -16,7 +16,7 @@ import os, uuid
 from pathlib import Path
 from typing import Dict
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from openai import OpenAI
 
 # Import helpers from the finished uploader script
@@ -112,7 +112,11 @@ def review(draft_id):
     if not d:
         flash("Draft not found")
         return redirect(url_for("home"))
-    return render_template("review.html", draft_id=draft_id, title=d['title'], script=d['script'])
+    return render_template("review.html", draft_id=draft_id, title=d['title'], script=d['script'], draft=d)
+
+@app.route("/audio/<filename>")
+def serve_audio(filename):
+    return send_from_directory("audio", filename)
 
 @app.route("/revise/<draft_id>", methods=["POST"])
 def revise(draft_id):
@@ -163,8 +167,9 @@ def generate_mp3(draft_id):
 
     # Store MP3 path in draft
     d["mp3_path"] = str(mp3_path)
-    flash("MP3 generated! You can now approve and upload when ready.")
-    return redirect(url_for("review", draft_id=draft_id))
+    d["mp3_filename"] = mp3_path.name
+    flash("MP3 generated successfully!")
+    return redirect(url_for("review", draft_id=draft_id, mp3_ready=True))
 
 @app.route("/approve/<draft_id>", methods=["POST"])
 def approve(draft_id):

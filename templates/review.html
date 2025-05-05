@@ -15,8 +15,12 @@
         <textarea class="form-control" name="script" rows="18" required>{{ script }}</textarea>
     </div>
     <div class="btn-group primary-actions">
-        <button formaction="/generate_mp3/{{ draft_id }}" formmethod="post" class="btn btn-primary" onclick="this.disabled=true; this.innerHTML='Generating MP3...'; this.form.submit();">Generate MP3</button>
-        <button class="btn btn-success" onclick="this.disabled=true; this.innerHTML='Publishing...'; this.form.submit();">Approve & Upload</button>
+        {% if request.args.get('mp3_ready') %}
+            <a href="/audio/{{ draft['mp3_filename'] }}" download class="btn btn-info">Download MP3</a>
+            <button class="btn btn-success" onclick="this.disabled=true; this.innerHTML='Publishing...'; this.form.submit();">Upload to Transistor</button>
+        {% else %}
+            <button formaction="/generate_mp3/{{ draft_id }}" formmethod="post" class="btn btn-primary" onclick="this.disabled=true; this.innerHTML='Generating MP3...'; this.form.submit();">Generate MP3</button>
+        {% endif %}
     </div>
     <div class="mt-4">
         <label class="form-label">Feedback for regeneration</label>
