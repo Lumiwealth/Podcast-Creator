@@ -171,6 +171,55 @@ def generate_mp3(draft_id):
     flash("MP3 generated successfully!")
     return redirect(url_for("review", draft_id=draft_id, mp3_ready=True))
 
+@app.route("/upload/<draft_id>", methods=["POST"])
+def upload(draft_id):
+    d = DRAFTS.get(draft_id)
+    if not d or "mp3_path" not in d:
+        flash("MP3 not found")
+        return redirect(url_for("review", draft_id=draft_id))
+        
+    # Upload to Transistor
+    title = request.form.get("title", d["title"]).strip()
+    script = request.form.get("script", d["script"]).strip()
+    mp3_path = Path(d["mp3_path"])
+    
+    up_url, audio_url = uploader.transistor_authorise(mp3_path.name)
+    uploader.transistor_put_audio(up_url, mp3_path)
+    ep_id = uploader.transistor_create_episode(title, script, audio_url)
+    
+    flash(f"Episode drafted on Transistor (ID {ep_id}).")
+    return redirect(url_for("home"))
+
+@app.route("/generate_and_upload/<draft_id>", methods=["POST"]) 
+def generate_and_upload(draft_id):
+    d = DRAFTS.get(draft_id)
+    if not d:
+        flash("Draft not found")
+        return redirect(url_for("home"))
+
+    title = request.form.get("title", d["title"]).strip()
+    script = request.form.get("script", d["script"]).strip()
+    d["title"] = title 
+    d["script"] = script
+
+    # Generate MP3
+    chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
+    audio_parts = [uploader.tts_chunk(i, c)[1] for i, c in enumerate(chunks)]
+    unique_id = str(uuid.uuid4())[:4]
+    mp3_path = Path("audio") / f"{title.replace(' ', '_')}_{unique_id}.mp3"
+    mp3_path.parent.mkdir(exist_ok=True)
+    with mp3_path.open("wb") as f:
+        for part in audio_parts:
+            f.write(part)
+
+    # Upload to Transistor
+    up_url, audio_url = uploader.transistor_authorise(mp3_path.name)
+    uploader.transistor_put_audio(up_url, mp3_path)
+    ep_id = uploader.transistor_create_episode(title, script, audio_url)
+    
+    flash(f"Episode drafted on Transistor (ID {ep_id}).")
+    return redirect(url_for("home"))
+
 @app.route("/approve/<draft_id>", methods=["POST"])
 def approve(draft_id):
     d = DRAFTS.pop(draft_id, None)
