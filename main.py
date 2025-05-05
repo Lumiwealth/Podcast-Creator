@@ -83,8 +83,9 @@ def generate_script(title: str, idea: str) -> str:
 - End with a powerful conclusion that ties everything together
 - Use short paragraphs with clear transitions
 - Write for the ear - no citations, parentheticals, or formatting
+- Write like Malcolm Gladwell but dont ever use his name, or any other authors name, it's just a style guide and mentioning a name like that can get us sued
 
-Write a ~15000 word pure narrative script with NO audio direction markers."""}, #Increased word count
+Write a ~15000 word pure narrative script with NO audio direction markers. Make sure it's engaging and compelling, but also long enough to be a full episode. Seriously 30000 words. """}, #Increased word count
         {"role": "user", "content": f"Title: {title}\n\nCore idea: {idea}\n\nCreate a compelling podcast episode that explores this topic through vivid storytelling and unexpected connections, building to a powerful insight."},
     ]
     resp = chat_create(messages, temperature=0.7, max_tokens=4096)
