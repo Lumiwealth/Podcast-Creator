@@ -84,7 +84,7 @@ def generate_script(title: str, idea: str) -> str:
 - Use short paragraphs with clear transitions
 - Write for the ear - no citations, parentheticals, or formatting
 
-Write a ~5000 word pure narrative script with NO audio direction markers."""},
+Write a ~15000 word pure narrative script with NO audio direction markers."""}, #Increased word count
         {"role": "user", "content": f"Title: {title}\n\nCore idea: {idea}\n\nCreate a compelling podcast episode that explores this topic through vivid storytelling and unexpected connections, building to a powerful insight."},
     ]
     resp = chat_create(messages, temperature=0.7, max_tokens=2048)
@@ -153,7 +153,9 @@ def generate_mp3(draft_id):
     # Generate MP3
     chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
     audio_parts = [uploader.tts_chunk(i, c)[1] for i, c in enumerate(chunks)]
-    mp3_path = Path("audio") / f"draft_{draft_id}.mp3"
+    #Improved filename generation
+    unique_id = str(uuid.uuid4())[:4]
+    mp3_path = Path("audio") / f"{title.replace(' ', '_')}_{unique_id}.mp3"
     mp3_path.parent.mkdir(exist_ok=True)
     with mp3_path.open("wb") as f:
         for part in audio_parts:
