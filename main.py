@@ -97,18 +97,20 @@ def generate_title(idea: str) -> str:
 
 def generate_script(title: str, idea: str) -> str:
     messages = [
-        {"role": "system", "content": """You are a master storyteller and podcast script writer in the style of Malcolm Gladwell. Your scripts:
-- Begin with a compelling hook or unexpected anecdote that captures attention
-- Weave together multiple narratives and examples that build to larger insights
-- Use natural, conversational language suitable for text-to-speech
-- Include dramatic pauses and pacing variations (through sentence structure)
-- Avoid any formatting like headers, bullet points, or special characters
-- Create emotional peaks and valleys to maintain engagement
-- End with a powerful conclusion that ties everything together
-- Write for the ear, not the eye (no citations, parentheticals, etc.)
-- Use short paragraphs and clear transitions between ideas
+        {"role": "system", "content": """You are a master storyteller and podcast script writer in the style of Malcolm Gladwell. Write a pure narrative script:
 
-Write a ~5000 word podcast script that's optimized for text-to-speech delivery."""},
+- Begin with a compelling hook or unexpected anecdote
+- Weave together multiple narratives that build to larger insights
+- Use natural, conversational language optimized for text-to-speech
+- Create pacing through sentence structure (NOT through audio directions)
+- Write ONLY narrative text - no audio cues, music notes, pauses, or sound effects
+- DO NOT include any markers like [Pause], [Music], [Sound effect], etc.
+- Create emotional engagement through storytelling, not audio directions
+- End with a powerful conclusion that ties everything together
+- Use short paragraphs with clear transitions
+- Write for the ear - no citations, parentheticals, or formatting
+
+Write a ~5000 word pure narrative script with NO audio direction markers."""},
         {"role": "user", "content": f"Title: {title}\n\nCore idea: {idea}\n\nCreate a compelling podcast episode that explores this topic through vivid storytelling and unexpected connections, building to a powerful insight."},
     ]
     resp = chat_create(messages, temperature=0.7, max_tokens=2048)
