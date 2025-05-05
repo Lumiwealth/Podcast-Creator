@@ -70,16 +70,12 @@ def extract_title_from_script(script: str) -> str:
             return line
     return "Untitled Episode"  # Fallback
 
-def generate_script(idea: str) -> tuple[str, str]:
+def generate_script(idea: str) -> str:
     messages = [
-        {"role": "system", "content": """You are a master storyteller and podcast script writer in the style of Malcolm Gladwell. Write a pure narrative script:
+        {"role": "system", "content": """You are a master storyteller and podcast script writer. Write a pure narrative script:
 
 - Begin with a clear, catchy title on the first line
 - Follow with a compelling hook or unexpected anecdote
-    messages = [
-        {"role": "system", "content": """You are a master storyteller and podcast script writer in the style of Malcolm Gladwell. Write a pure narrative script:
-
-- Begin with a compelling hook or unexpected anecdote
 - Weave together multiple narratives that build to larger insights
 - Use natural, conversational language optimized for text-to-speech
 - Create pacing through sentence structure (NOT through audio directions)
@@ -89,10 +85,11 @@ def generate_script(idea: str) -> tuple[str, str]:
 - End with a powerful conclusion that ties everything together
 - Use short paragraphs with clear transitions
 - Write for the ear - no citations, parentheticals, or formatting
-- Write in an engaging narrative style without referencing specific authors"""}, #Increased word count
+- Write in an engaging narrative style without referencing specific authors
 
-Write a ~15000 word pure narrative script with NO audio direction markers. Make sure it's engaging and compelling, but also long enough to be a full episode. Seriously 30000 words. """}, #Increased word count
-        {"role": "user", "content": f"Title: {title}\n\nCore idea: {idea}\n\nCreate a compelling podcast episode that explores this topic through vivid storytelling and unexpected connections, building to a powerful insight."},
+Write a ~15000 word pure narrative script with NO audio direction markers. Make sure it's engaging and compelling, but also long enough to be a full episode."""},
+        {"role": "user", "content": f"Core idea: {idea}\n\nCreate a compelling podcast episode that explores this topic through vivid storytelling and unexpected connections, building to a powerful insight."}
+    ]
     ]
     resp = chat_create(messages, temperature=0.7, max_tokens=4096)
     return resp.choices[0].message.content.strip()
