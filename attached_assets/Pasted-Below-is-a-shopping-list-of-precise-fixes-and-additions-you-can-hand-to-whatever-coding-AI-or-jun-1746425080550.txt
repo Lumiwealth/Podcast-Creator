@@ -1,0 +1,123 @@
+Below is a “shopping-list” of precise fixes and additions you can hand to whatever coding-AI (or junior dev) you like.  Each bullet references the file / function / template that needs to change and exactly what to do there.  If they apply these edits verbatim the buttons will finally do what their names promise and you’ll be able to paste several ideas at once and batch-publish everything in a single click.
+
+⸻
+
+1. Accept multiple ideas in one shot
+
+templates/home.html
+	1.	Change the label so users know they can drop in many ideas:
+
+<label class="form-label" for="idea">
+    Episode idea(s) – one per line
+</label>
+<textarea … placeholder="Put each episode idea on its own line"></textarea>
+
+	2.	Rename the green button so it’s obvious it publishes every idea:
+
+<button …>Generate & Publish All</button>
+
+(it still posts to /generate_and_publish; you’re just clarifying the label)
+
+⸻
+
+main.py
+
+a. Helper to explode the textarea into individual ideas
+
+Add this near the other helpers:
+
+def explode_ideas(raw: str) -> list[str]:
+    """Split textarea into individual, non-empty ideas."""
+    return [line.strip() for line in raw.splitlines() if line.strip()]
+
+b. /generate (draft-only)
+
+Replace the first two lines of the route with:
+
+ideas = explode_ideas(request.form["idea"])
+if len(ideas) > 1:
+    draft_ids = []
+    for idea in ideas:
+        script = generate_script(idea)
+        title  = extract_title_from_script(script)
+        draft_id = str(uuid.uuid4())
+        DRAFTS[draft_id] = {"idea": idea, "title": title, "script": script}
+        draft_ids.append(draft_id)
+    # optional: build a “bulk review” page; simplest is redirect to the first draft
+    return redirect(url_for("review", draft_id=draft_ids[0]))
+else:
+    idea = ideas[0]
+    …                         # existing single-idea logic
+
+(If you want a proper multi-draft review page add a new @app.route("/bulk_review") that takes a comma-separated list of draft_ids, loops through DRAFTS, and renders them in a table.)
+
+c. /generate_and_publish (green button)
+
+Replace the single-idea branch with a loop that reuses your existing publishing code:
+
+ideas = explode_ideas(request.form["idea"])
+results = []
+for raw in ideas:
+    try:
+        script = generate_script(raw)
+        title  = extract_title_from_script(script)
+        # MP3 → Transistor (same as before) …
+        results.append(f"✅ Published “{title}”")
+    except Exception as e:
+        results.append(f"❌ {raw[:40]}… – {e}")
+flash("<br>".join(results) + '<br><a …>View on Transistor</a>')
+return redirect(url_for("home"))
+
+(Optionally wrap the loop in a ThreadPoolExecutor to run 2-3 in parallel, but keep it serial for now to stay under rate limits.)
+
+⸻
+
+2. Make “Generate & Upload” on the review page actually stay on the review page
+
+main.py – /generate_and_upload
+	1.	After the upload succeeds, replace
+
+return redirect(url_for("home"))
+
+with
+
+flash(f'✅ Draft uploaded to Transistor (ID {ep_id})')
+return redirect(url_for("review", draft_id=draft_id, uploaded=1))
+
+
+
+⸻
+
+templates/review.html
+	1.	At the top of the template (inside the <form> but above the primary buttons) add:
+
+{% if request.args.get('uploaded') %}
+    <div class="alert alert-success">
+        Episode is on Transistor!  You can tweak the script here and re-upload, or just head over and hit “Publish”.
+    </div>
+{% endif %}
+
+	2.	Change the button group so after an upload you don’t show the “Generate & Upload” shortcut again.  Update the existing conditional:
+
+{% if request.args.get('mp3_ready') or request.args.get('uploaded') %}
+    …  <!-- show Download + Upload buttons only -->
+{% else %}
+    …  <!-- original Generate MP3 & Generate + Upload buttons -->
+{% endif %}
+
+
+
+⸻
+
+3. Minor naming/UX clean-up (optional but keeps everyone sane)
+	•	Rename the server route and button in the review page from Generate & Upload to Generate MP3 & Upload Draft so the difference between “draft on Transistor” and “fully published” is crystal-clear.
+	•	Add target="_blank" to the Download MP3 link so you don’t navigate away.
+	•	If you do add a /bulk_review page, let each row have “Regenerate”, “Generate MP3”, and “Upload” buttons so you can polish the worst scripts before publishing.
+
+⸻
+
+One-sentence summary you can forward verbatim
+
+“Split the textarea into multiple ideas (explode_ideas helper), loop through them inside /generate and /generate_and_publish, add flash summaries, and in /generate_and_upload redirect back to its own review page (?uploaded=1) instead of dumping me on the home screen—see file references and snippets above.”
+
+That’s it—apply those tweaks and the UI will finally let you paste a handful of episode ideas, click a single button, and walk away while everything cooks and lands on Transistor.  If you need anything more (background job queue, progress bar, etc.) just holler.
