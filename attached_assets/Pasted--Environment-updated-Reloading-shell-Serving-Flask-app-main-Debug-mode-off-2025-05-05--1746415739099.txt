@@ -1,0 +1,53 @@
+ Environment updated. Reloading shell...
+ * Serving Flask app 'main'
+ * Debug mode: off
+2025-05-05 03:26:39 | INFO     | WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://172.31.128.55:8080
+2025-05-05 03:26:39 | INFO     | Press CTRL+C to quit
+2025-05-05 03:26:41 | INFO     | 172.31.128.55 - - [05/May/2025 03:26:41] "GET / HTTP/1.1" 200 -
+2025-05-05 03:27:27 | ERROR    | Exception on /generate [POST]
+Traceback (most recent call last):
+  File "/home/runner/workspace/main.py", line 75, in chat_create
+    return openai.ChatCompletion.create(model=PREFERRED_MODEL, messages=messages, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/openai/lib/_old_api.py", line 39, in __call__
+    raise APIRemovedInV1(symbol=self._symbol)
+openai.lib._old_api.APIRemovedInV1: 
+
+You tried to access openai.ChatCompletion, but this is no longer supported in openai>=1.0.0 - see the README at https://github.com/openai/openai-python for the API.
+
+You can run `openai migrate` to automatically upgrade your codebase to use the 1.0.0 interface. 
+
+Alternatively, you can pin your installation to the old version, e.g. `pip install openai==0.28`
+
+A detailed migration guide is available here: https://github.com/openai/openai-python/discussions/742
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/main.py", line 115, in generate
+    title  = generate_title(idea)
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/main.py", line 85, in generate_title
+    resp = chat_create(messages, temperature=0.9, max_tokens=32)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/main.py", line 76, in chat_create
+    except openai.error.InvalidRequestError:
+           ^^^^^^^^^^^^
+AttributeError: module 'openai' has no attribute 'error'
+2025-05-05 03:27:27 | INFO     | 172.31.128.55 - - [05/May/2025 03:27:27] "POST /generate HTTP/1.1" 500 -
