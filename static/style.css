@@ -1,0 +1,29 @@
+
+.btn-group {
+    margin: 1rem 0;
+}
+
+.btn-group .btn {
+    margin-right: 1rem;
+}
+
+.btn-primary:disabled,
+.btn-success:disabled,
+.btn-warning:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.card {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.form-control {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+textarea.form-control {
+    font-family: monospace;
+}

@@ -1,4 +1,3 @@
-
 # web_server.py – Flask app to brainstorm, iterate, and publish podcast episodes
 # ==========================================================================
 # Quick start on Replit (or any Python 3.9+):
@@ -17,7 +16,7 @@ import os, uuid
 from pathlib import Path
 from typing import Dict
 
-from flask import Flask, render_template_string, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash
 from openai import OpenAI
 
 # Import helpers from the finished uploader script
@@ -36,35 +35,10 @@ FALLBACK_MODEL  = "gpt-3.5-turbo"
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
+app.template_folder = "templates" # added template folder
 
 # Ephemeral draft storage
 DRAFTS: Dict[str, Dict] = {}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# HTML wrapper (Bootstrap 5)
-# ─────────────────────────────────────────────────────────────────────────────
-BASE_HTML = """<!doctype html>
-<html lang='en'>
-  <head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <title>Podcast Episode Builder</title>
-    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css' rel='stylesheet'>
-  </head>
-  <body class='bg-light'>
-    <div class='container py-5'>
-      <h1 class='mb-4 text-center'>Podcast Episode Builder</h1>
-      {% with msgs = get_flashed_messages() %}{% if msgs %}
-        <div class='alert alert-info'>{{ msgs[0] }}</div>
-      {% endif %}{% endwith %}
-      {{ body|safe }}
-    </div>
-    <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
-  </body>
-</html>"""
-
-def page(content: str):
-    return render_template_string(BASE_HTML, body=content)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # OpenAI helpers
@@ -121,15 +95,7 @@ Write a ~5000 word pure narrative script with NO audio direction markers."""},
 # ─────────────────────────────────────────────────────────────────────────────
 @app.route("/")
 def home():
-    form = """
-    <form method='post' action='/generate' class='card p-4 shadow-lg'>
-      <div class='mb-3'>
-        <label class='form-label' for='idea'>Episode idea / talking points</label>
-        <textarea class='form-control' id='idea' name='idea' rows='6' required></textarea>
-      </div>
-      <button class='btn btn-primary' type='submit' onclick="this.disabled=true; this.innerHTML='Generating... (this may take a minute)'; this.form.submit();">Generate Draft</button>
-    </form>"""
-    return page(form)
+    return render_template("home.html")
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -146,39 +112,7 @@ def review(draft_id):
     if not d:
         flash("Draft not found")
         return redirect(url_for("home"))
-
-    body = f"""
-    <style>
-.btn-group { margin: 1rem 0; }
-.btn-group .btn { margin-right: 1rem; }
-.btn-primary:disabled, .btn-success:disabled, .btn-warning:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-.card { max-width: 900px; margin: 0 auto; }
-.form-control { font-size: 1rem; line-height: 1.6; }
-textarea.form-control { font-family: monospace; }
-</style>
-<form method='post' action='/approve/{draft_id}' class='card shadow-sm p-4'>
-      <div class='mb-3'>
-        <label class='form-label'>Episode title (editable)</label>
-        <input class='form-control' name='title' value='{d['title']}' required />
-      </div>
-      <div class='mb-3'>
-        <label class='form-label'>Script</label>
-        <textarea class='form-control' name='script' rows='18' required>{d['script']}</textarea>
-      </div>
-      <div class='btn-group'>
-        <button formaction='/generate_mp3/{draft_id}' formmethod='post' class='btn btn-primary' onclick="this.disabled=true; this.innerHTML='Generating MP3...'; this.form.submit();">Generate MP3</button>
-        <button class='btn btn-success' onclick="this.disabled=true; this.innerHTML='Publishing...'; this.form.submit();">Approve & Publish</button>
-        <button formaction='/revise/{draft_id}' formmethod='post' class='btn btn-warning' onclick="this.disabled=true; this.innerHTML='Regenerating...'; this.form.submit();">Regenerate Script</button>
-      </div>
-      <div class='mt-4'>
-        <label class='form-label'>Feedback for regeneration (optional)</label>
-        <textarea class='form-control' name='feedback' rows='3' placeholder='Enter feedback to guide script regeneration...'></textarea>
-      </div>
-    </form>"""
-    return page(body)
+    return render_template("review.html", draft_id=draft_id, title=d['title'], script=d['script'])
 
 @app.route("/revise/<draft_id>", methods=["POST"])
 def revise(draft_id):
@@ -222,7 +156,7 @@ def generate_mp3(draft_id):
     with mp3_path.open("wb") as f:
         for part in audio_parts:
             f.write(part)
-    
+
     # Store MP3 path in draft
     d["mp3_path"] = str(mp3_path)
     flash("MP3 generated successfully!")

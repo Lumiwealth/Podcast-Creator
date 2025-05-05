@@ -1,0 +1,23 @@
+
+{% extends "base.html" %}
+{% block content %}
+<form method="post" action="/approve/{{ draft_id }}" class="card shadow-sm p-4">
+    <div class="mb-3">
+        <label class="form-label">Episode title (editable)</label>
+        <input class="form-control" name="title" value="{{ title }}" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Script</label>
+        <textarea class="form-control" name="script" rows="18" required>{{ script }}</textarea>
+    </div>
+    <div class="btn-group">
+        <button formaction="/generate_mp3/{{ draft_id }}" formmethod="post" class="btn btn-primary" onclick="this.disabled=true; this.innerHTML='Generating MP3...'; this.form.submit();">Generate MP3</button>
+        <button class="btn btn-success" onclick="this.disabled=true; this.innerHTML='Publishing...'; this.form.submit();">Approve & Publish</button>
+        <button formaction="/revise/{{ draft_id }}" formmethod="post" class="btn btn-warning" onclick="this.disabled=true; this.innerHTML='Regenerating...'; this.form.submit();">Regenerate Script</button>
+    </div>
+    <div class="mt-4">
+        <label class="form-label">Feedback for regeneration (optional)</label>
+        <textarea class="form-control" name="feedback" rows="3" placeholder="Enter feedback to guide script regeneration..."></textarea>
+    </div>
+</form>
+{% endblock %}
