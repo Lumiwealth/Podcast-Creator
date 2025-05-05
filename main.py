@@ -111,13 +111,10 @@ def generate():
 
 @app.route("/generate_and_publish", methods=["POST"])
 def generate_and_publish():
-    # Handle multiple ideas
-    ideas = request.form["idea"].strip().split("\n")
+    idea = request.form["idea"].strip()
     results = []
     
-    for idea in ideas:
-        if not idea.strip():
-            continue
+    if idea:
             
         try:
             # Generate content
