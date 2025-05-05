@@ -177,17 +177,17 @@ def upload(draft_id):
     if not d or "mp3_path" not in d:
         flash("MP3 not found")
         return redirect(url_for("review", draft_id=draft_id))
-        
+
     # Upload to Transistor
     title = request.form.get("title", d["title"]).strip()
     script = request.form.get("script", d["script"]).strip()
     mp3_path = Path(d["mp3_path"])
-    
+
     up_url, audio_url = uploader.transistor_authorise(mp3_path.name)
     uploader.transistor_put_audio(up_url, mp3_path)
     ep_id = uploader.transistor_create_episode(title, script, audio_url)
-    
-    flash(f"Episode drafted on Transistor (ID {ep_id}).")
+
+    flash(f'Episode drafted on Transistor (ID {ep_id}). <a href="https://dashboard.transistor.fm/shows/private-for-lumiwealth-podcast" target="_blank">Publish your episode here</a>')
     return redirect(url_for("home"))
 
 @app.route("/generate_and_upload/<draft_id>", methods=["POST"]) 
@@ -216,8 +216,8 @@ def generate_and_upload(draft_id):
     up_url, audio_url = uploader.transistor_authorise(mp3_path.name)
     uploader.transistor_put_audio(up_url, mp3_path)
     ep_id = uploader.transistor_create_episode(title, script, audio_url)
-    
-    flash(f"Episode drafted on Transistor (ID {ep_id}).")
+
+    flash(f'Episode drafted on Transistor (ID {ep_id}). <a href="https://dashboard.transistor.fm/shows/private-for-lumiwealth-podcast" target="_blank">Publish your episode here</a>')
     return redirect(url_for("home"))
 
 @app.route("/approve/<draft_id>", methods=["POST"])
@@ -247,7 +247,7 @@ def approve(draft_id):
     # Uncomment to auto‑publish immediately
     # uploader.transistor_publish_episode(ep_id)
 
-    flash(f"Episode drafted on Transistor (ID {ep_id}).")
+    flash(f'Episode drafted on Transistor (ID {ep_id}). <a href="https://dashboard.transistor.fm/shows/private-for-lumiwealth-podcast" target="_blank">Publish your episode here</a>')
     return redirect(url_for("home"))
 
 # ─────────────────────────────────────────────────────────────────────────────

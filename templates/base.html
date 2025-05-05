@@ -10,7 +10,7 @@
     <div class="container py-5">
         <h1 class="mb-4 text-center">Podcast Episode Builder</h1>
         {% with msgs = get_flashed_messages() %}{% if msgs %}
-            <div class="alert alert-info">{{ msgs[0] }}</div>
+            <div class="alert alert-info">{{ msgs[0] | safe }}</div>
         {% endif %}{% endwith %}
         {% block content %}{% endblock %}
     </div>
