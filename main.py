@@ -148,7 +148,18 @@ def review(draft_id):
         return redirect(url_for("home"))
 
     body = f"""
-    <form method='post' action='/approve/{draft_id}' class='card shadow-sm p-4'>
+    <style>
+.btn-group { margin: 1rem 0; }
+.btn-group .btn { margin-right: 1rem; }
+.btn-primary:disabled, .btn-success:disabled, .btn-warning:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.card { max-width: 900px; margin: 0 auto; }
+.form-control { font-size: 1rem; line-height: 1.6; }
+textarea.form-control { font-family: monospace; }
+</style>
+<form method='post' action='/approve/{draft_id}' class='card shadow-sm p-4'>
       <div class='mb-3'>
         <label class='form-label'>Episode title (editable)</label>
         <input class='form-control' name='title' value='{d['title']}' required />
@@ -157,10 +168,14 @@ def review(draft_id):
         <label class='form-label'>Script</label>
         <textarea class='form-control' name='script' rows='18' required>{d['script']}</textarea>
       </div>
-      <button class='btn btn-success me-2' onclick="this.disabled=true; this.innerHTML='Publishing...'; this.form.submit();">Approve & Publish</button>
-      <button formaction='/revise/{draft_id}' formmethod='post' class='btn btn-warning' onclick="this.disabled=true; this.innerHTML='Regenerating...'; this.form.submit();">Regenerate from Feedback</button>
-      <div class='mt-3'>
-        <textarea class='form-control' name='feedback' placeholder='Optional feedback for regeneration…'></textarea>
+      <div class='btn-group'>
+        <button formaction='/generate_mp3/{draft_id}' formmethod='post' class='btn btn-primary' onclick="this.disabled=true; this.innerHTML='Generating MP3...'; this.form.submit();">Generate MP3</button>
+        <button class='btn btn-success' onclick="this.disabled=true; this.innerHTML='Publishing...'; this.form.submit();">Approve & Publish</button>
+        <button formaction='/revise/{draft_id}' formmethod='post' class='btn btn-warning' onclick="this.disabled=true; this.innerHTML='Regenerating...'; this.form.submit();">Regenerate Script</button>
+      </div>
+      <div class='mt-4'>
+        <label class='form-label'>Feedback for regeneration (optional)</label>
+        <textarea class='form-control' name='feedback' rows='3' placeholder='Enter feedback to guide script regeneration...'></textarea>
       </div>
     </form>"""
     return page(body)
@@ -187,6 +202,30 @@ def revise(draft_id):
     ]
     resp = chat_create(messages, temperature=0.7, max_tokens=2048)
     d["script"] = resp.choices[0].message.content.strip()
+    return redirect(url_for("review", draft_id=draft_id))
+
+@app.route("/generate_mp3/<draft_id>", methods=["POST"])
+def generate_mp3(draft_id):
+    d = DRAFTS.get(draft_id)
+    if not d:
+        flash("Draft not found")
+        return redirect(url_for("home"))
+
+    title = request.form.get("title", d["title"]).strip()
+    script = request.form.get("script", d["script"]).strip()
+
+    # Generate MP3
+    chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
+    audio_parts = [uploader.tts_chunk(i, c)[1] for i, c in enumerate(chunks)]
+    mp3_path = Path("audio") / f"draft_{draft_id}.mp3"
+    mp3_path.parent.mkdir(exist_ok=True)
+    with mp3_path.open("wb") as f:
+        for part in audio_parts:
+            f.write(part)
+    
+    # Store MP3 path in draft
+    d["mp3_path"] = str(mp3_path)
+    flash("MP3 generated successfully!")
     return redirect(url_for("review", draft_id=draft_id))
 
 @app.route("/approve/<draft_id>", methods=["POST"])
