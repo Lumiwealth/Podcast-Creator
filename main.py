@@ -147,6 +147,8 @@ def generate_mp3(draft_id):
 
     title = request.form.get("title", d["title"]).strip()
     script = request.form.get("script", d["script"]).strip()
+    d["title"] = title
+    d["script"] = script
 
     # Generate MP3
     chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
@@ -159,7 +161,7 @@ def generate_mp3(draft_id):
 
     # Store MP3 path in draft
     d["mp3_path"] = str(mp3_path)
-    flash("MP3 generated successfully!")
+    flash("MP3 generated! You can now approve and upload when ready.")
     return redirect(url_for("review", draft_id=draft_id))
 
 @app.route("/approve/<draft_id>", methods=["POST"])
