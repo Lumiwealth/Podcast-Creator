@@ -1,3 +1,4 @@
+
 # web_server.py – Flask app to brainstorm, iterate, and publish podcast episodes
 # ==========================================================================
 # Quick start on Replit (or any Python 3.9+):
@@ -17,7 +18,7 @@ from pathlib import Path
 from typing import Dict
 
 from flask import Flask, render_template_string, request, redirect, url_for, flash
-import openai
+from openai import OpenAI
 
 # Import helpers from the finished uploader script
 import make_episodes_and_upload as uploader
@@ -28,10 +29,10 @@ import make_episodes_and_upload as uploader
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise RuntimeError("OPENAI_API_KEY not set")
-openai.api_key = OPENAI_API_KEY
 
-PREFERRED_MODEL = "gpt-4.5"   # best creative model as of May 2025
-FALLBACK_MODEL  = "gpt-4o"
+client = OpenAI(api_key=OPENAI_API_KEY)
+PREFERRED_MODEL = "gpt-4"   # best creative model as of May 2025
+FALLBACK_MODEL  = "gpt-3.5-turbo"
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
@@ -72,10 +73,19 @@ def page(content: str):
 def chat_create(messages, **kw):
     """Try preferred model, fall back if unavailable."""
     try:
-        return openai.ChatCompletion.create(model=PREFERRED_MODEL, messages=messages, **kw)
-    except openai.error.InvalidRequestError:
-        return openai.ChatCompletion.create(model=FALLBACK_MODEL, messages=messages, **kw)
-
+        completion = client.chat.completions.create(
+            model=PREFERRED_MODEL,
+            messages=messages,
+            **kw
+        )
+        return completion
+    except Exception:
+        completion = client.chat.completions.create(
+            model=FALLBACK_MODEL,
+            messages=messages,
+            **kw
+        )
+        return completion
 
 def generate_title(idea: str) -> str:
     messages = [
@@ -84,7 +94,6 @@ def generate_title(idea: str) -> str:
     ]
     resp = chat_create(messages, temperature=0.9, max_tokens=32)
     return resp.choices[0].message.content.strip().strip("\"")
-
 
 def generate_script(title: str, idea: str) -> str:
     messages = [
