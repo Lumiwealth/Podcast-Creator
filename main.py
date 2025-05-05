@@ -61,15 +61,21 @@ def chat_create(messages, **kw):
         )
         return completion
 
-def generate_title(idea: str) -> str:
-    messages = [
-        {"role": "system", "content": "Create a catchy podcast episode title (≤10 words). Respond ONLY with the title."},
-        {"role": "user", "content": idea},
-    ]
-    resp = chat_create(messages, temperature=0.9, max_tokens=32)
-    return resp.choices[0].message.content.strip().strip("\"")
+def extract_title_from_script(script: str) -> str:
+    # Look for the first line that could be a title
+    lines = script.split('\n')
+    for line in lines[:10]:  # Check first 10 lines
+        line = line.strip()
+        if line and len(line) <= 100 and not line.startswith(('A:', 'Q:', '-', '#', '>')):
+            return line
+    return "Untitled Episode"  # Fallback
 
-def generate_script(title: str, idea: str) -> str:
+def generate_script(idea: str) -> tuple[str, str]:
+    messages = [
+        {"role": "system", "content": """You are a master storyteller and podcast script writer in the style of Malcolm Gladwell. Write a pure narrative script:
+
+- Begin with a clear, catchy title on the first line
+- Follow with a compelling hook or unexpected anecdote
     messages = [
         {"role": "system", "content": """You are a master storyteller and podcast script writer in the style of Malcolm Gladwell. Write a pure narrative script:
 
@@ -101,8 +107,8 @@ def home():
 @app.route("/generate", methods=["POST"])
 def generate():
     idea = request.form["idea"].strip()
-    title  = generate_title(idea)
-    script = generate_script(title, idea)
+    script = generate_script(idea)
+    title = extract_title_from_script(script)
     draft_id = str(uuid.uuid4())
     DRAFTS[draft_id] = {"idea": idea, "title": title, "script": script}
     return redirect(url_for("review", draft_id=draft_id))
@@ -111,8 +117,8 @@ def generate():
 def generate_and_publish():
     # Generate content
     idea = request.form["idea"].strip()
-    title = generate_title(idea)
-    script = generate_script(title, idea)
+    script = generate_script(idea)
+    title = extract_title_from_script(script)
     
     # Generate MP3
     chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
@@ -124,12 +130,13 @@ def generate_and_publish():
         for part in audio_parts:
             f.write(part)
 
-    # Upload to Transistor
+    # Upload to Transistor and publish
     up_url, audio_url = uploader.transistor_authorise(mp3_path.name)
     uploader.transistor_put_audio(up_url, mp3_path)
     ep_id = uploader.transistor_create_episode(title, script, audio_url)
+    uploader.transistor_publish_episode(ep_id)  # Actually publish the episode
 
-    flash(f'Episode drafted on Transistor (ID {ep_id}). <a href="https://dashboard.transistor.fm/shows/private-for-lumiwealth-podcast" target="_blank">Publish your episode here</a>')
+    flash(f'Episode published on Transistor (ID {ep_id}). <a href="https://dashboard.transistor.fm/shows/private-for-lumiwealth-podcast" target="_blank">View your published episode</a>')
     return redirect(url_for("home"))
 
 @app.route("/review/<draft_id>")
