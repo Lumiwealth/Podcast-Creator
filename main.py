@@ -97,8 +97,19 @@ def generate_title(idea: str) -> str:
 
 def generate_script(title: str, idea: str) -> str:
     messages = [
-        {"role": "system", "content": "You are a professional podcast writer. Produce an engaging ~5000‑word script."},
-        {"role": "user", "content": f"Episode title: {title}\n\nEpisode idea: {idea}"},
+        {"role": "system", "content": """You are a master storyteller and podcast script writer in the style of Malcolm Gladwell. Your scripts:
+- Begin with a compelling hook or unexpected anecdote that captures attention
+- Weave together multiple narratives and examples that build to larger insights
+- Use natural, conversational language suitable for text-to-speech
+- Include dramatic pauses and pacing variations (through sentence structure)
+- Avoid any formatting like headers, bullet points, or special characters
+- Create emotional peaks and valleys to maintain engagement
+- End with a powerful conclusion that ties everything together
+- Write for the ear, not the eye (no citations, parentheticals, etc.)
+- Use short paragraphs and clear transitions between ideas
+
+Write a ~5000 word podcast script that's optimized for text-to-speech delivery."""},
+        {"role": "user", "content": f"Title: {title}\n\nCore idea: {idea}\n\nCreate a compelling podcast episode that explores this topic through vivid storytelling and unexpected connections, building to a powerful insight."},
     ]
     resp = chat_create(messages, temperature=0.7, max_tokens=2048)
     return resp.choices[0].message.content.strip()
@@ -114,7 +125,7 @@ def home():
         <label class='form-label' for='idea'>Episode idea / talking points</label>
         <textarea class='form-control' id='idea' name='idea' rows='6' required></textarea>
       </div>
-      <button class='btn btn-primary' type='submit'>Generate Draft</button>
+      <button class='btn btn-primary' type='submit' onclick="this.disabled=true; this.innerHTML='Generating... (this may take a minute)'; this.form.submit();">Generate Draft</button>
     </form>"""
     return page(form)
 
@@ -144,8 +155,8 @@ def review(draft_id):
         <label class='form-label'>Script</label>
         <textarea class='form-control' name='script' rows='18' required>{d['script']}</textarea>
       </div>
-      <button class='btn btn-success me-2'>Approve & Publish</button>
-      <button formaction='/revise/{draft_id}' formmethod='post' class='btn btn-warning'>Regenerate from Feedback</button>
+      <button class='btn btn-success me-2' onclick="this.disabled=true; this.innerHTML='Publishing...'; this.form.submit();">Approve & Publish</button>
+      <button formaction='/revise/{draft_id}' formmethod='post' class='btn btn-warning' onclick="this.disabled=true; this.innerHTML='Regenerating...'; this.form.submit();">Regenerate from Feedback</button>
       <div class='mt-3'>
         <textarea class='form-control' name='feedback' placeholder='Optional feedback for regeneration…'></textarea>
       </div>
