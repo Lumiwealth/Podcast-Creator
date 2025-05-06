@@ -211,6 +211,7 @@ def generate_script(part_outline: str, original_prompt: str, part: int, total_pa
 - **Assign Lines to Voices:** Use two distinct voices:
     - **{VOICE_PRIMARY_TAG}**: The main narrator, a female voice. This voice will carry the primary thread of the content.
     - **{VOICE_SECONDARY_TAG}**: An expert commentator or co-host, a male voice. This voice should provide additional insights, ask clarifying questions, offer different perspectives, or summarize key points.
+- **Dynamic Interaction Style:** Infuse a playfully challenging, slightly flirty, and fun dynamic between {VOICE_PRIMARY_TAG} and {VOICE_SECONDARY_TAG}. They should sound like they enjoy working together, occasionally teasing, gently questioning each other's points before building on them, or adding a witty remark. This tension should be light-hearted and serve to make the explanations more engaging, not to create actual conflict or derail the topic. For example, {VOICE_SECONDARY_TAG} might say, "Are you sure about that, {VOICE_PRIMARY_TAG}? I thought it was more like..." and {VOICE_PRIMARY_TAG} could respond with a confident clarification that also acknowledges the point, or vice-versa.
 - **Natural Dialogue:** Create a natural, flowing dialogue. The interaction should enhance understanding and engagement. It doesn't need to be strictly alternating lines for the entire script, but intersperse dialogue segments throughout the part, especially when explaining complex topics or transitioning between ideas.
 - **Clear Delineation:** Start each line or paragraph with the appropriate tag (e.g., `{VOICE_PRIMARY_TAG} Today, we'll explore...` or `{VOICE_SECONDARY_TAG} That's a great point, and I'd add...`).
 - **MANDATORY Structured Explanations:** For any point in this part's outline that involves explaining a concept, process, data, or any new information, YOU ARE REQUIRED to use structured teaching techniques (numbered lists, lettered lists, mnemonics, step-by-step analogies), delivered by either voice or in dialogue. This is non-negotiable.
@@ -224,7 +225,7 @@ def generate_script(part_outline: str, original_prompt: str, part: int, total_pa
 - Write in an engaging, authoritative, and exceptionally clear style.
 {part_instruction}
 
-Write a pure narrative script for Part {part} using two voices as specified. Ensure it fits logically within the series. Your main task is to explain the outlined points with structured clarity and depth, using dialogue effectively.
+Write a pure narrative script for Part {part} using two voices with the specified dynamic. Ensure it fits logically within the series. Your main task is to explain the outlined points with structured clarity and depth, using an engaging and fun dialogue.
 """
 
     messages = [
