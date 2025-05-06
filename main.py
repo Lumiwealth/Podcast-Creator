@@ -176,6 +176,13 @@ Original Topic/Prompt:
     return outlines
 
 
+# Define voice tags and corresponding OpenAI voice names
+VOICE_PRIMARY_TAG = "[VOICE_1_FEMALE]"
+VOICE_SECONDARY_TAG = "[VOICE_2_MALE]"
+VOICE_PRIMARY_OPENAI = "alloy"  # Primary female voice
+VOICE_SECONDARY_OPENAI = "onyx" # Secondary male voice
+
+
 def generate_script(part_outline: str, original_prompt: str, part: int, total_parts: int) -> str:
     """Generates the script for a specific part using its outline and the original context."""
     logging.info(f"Generating script for part {part}/{total_parts}")
@@ -192,7 +199,7 @@ def generate_script(part_outline: str, original_prompt: str, part: int, total_pa
             # Focus only on Part X content
             part_instruction = f"\n\nFocus *exclusively* on the specific points outlined for Part {part}. Do not repeat content from previous parts. Ensure a smooth transition from the likely topic of the previous part and end with a compelling transition hinting at the next part's topic without explicitly stating 'next part'."
 
-    system_prompt = f"""You are a master storyteller and expert explainer, writing a podcast script. Your primary goal is to make complex topics understandable and memorable. Write a pure narrative script for PART {part} of a {total_parts}-part series.
+    system_prompt = f"""You are a master storyteller and expert explainer, writing a podcast script for two voices. Your primary goal is to make complex topics understandable, memorable, and engaging through dialogue. Write a pure narrative script for PART {part} of a {total_parts}-part series.
 
 **Overall Topic Context (from original user prompt):**
 {original_prompt}
@@ -200,25 +207,24 @@ def generate_script(part_outline: str, original_prompt: str, part: int, total_pa
 **Specific Outline for THIS Part ({part}/{total_parts}):**
 {part_outline}
 
-**CRITICAL Instructions:**
-- **MANDATORY Structured Explanations:** For any point in this part's outline that involves explaining a concept, process, data, or any new information, YOU ARE REQUIRED to use structured teaching techniques. This means explicitly using numbered lists (1, 2, 3), lettered lists (A, B, C), simple mnemonics (e.g., an acronym), or very clear step-by-step analogies. Do not just narrate; actively structure the information for maximum clarity and memorability. This is a non-negotiable requirement for all explanatory content in this script part. For example: 'To understand X, there are three key aspects: 1. Aspect One, which means... 2. Aspect Two, which involves... 3. Aspect Three, which leads to...'. Or, 'Remember the P.A.C.T. for this: P stands for..., A for..., C for..., T for...'.
-- **Substantive and Insightful Content:** Deliver in-depth, insightful content. Go beyond surface-level descriptions; explore the 'why' and 'how,' offering valuable takeaways. Minimize "fluff" and maximize meaningful information. Your structured explanations should deliver this substance.
-- **Focus EXCLUSIVELY on the points listed in the 'Specific Outline for THIS Part'.** Do NOT discuss topics assigned to other parts.
-- **DO NOT REPEAT content from other parts.** Assume the listener has heard the previous parts.
-- **DO NOT explicitly mention the part number.** Avoid phrases like "In Part {part}...", "This is Part {part}", "Continuing from Part {part-1}...", "In the next part...". The script should flow naturally as one continuous narrative when combined later.
+**CRITICAL Instructions for Two-Voice Script:**
+- **Assign Lines to Voices:** Use two distinct voices:
+    - **{VOICE_PRIMARY_TAG}**: The main narrator, a female voice. This voice will carry the primary thread of the content.
+    - **{VOICE_SECONDARY_TAG}**: An expert commentator or co-host, a male voice. This voice should provide additional insights, ask clarifying questions, offer different perspectives, or summarize key points.
+- **Natural Dialogue:** Create a natural, flowing dialogue. The interaction should enhance understanding and engagement. It doesn't need to be strictly alternating lines for the entire script, but intersperse dialogue segments throughout the part, especially when explaining complex topics or transitioning between ideas.
+- **Clear Delineation:** Start each line or paragraph with the appropriate tag (e.g., `{VOICE_PRIMARY_TAG} Today, we'll explore...` or `{VOICE_SECONDARY_TAG} That's a great point, and I'd add...`).
+- **MANDATORY Structured Explanations:** For any point in this part's outline that involves explaining a concept, process, data, or any new information, YOU ARE REQUIRED to use structured teaching techniques (numbered lists, lettered lists, mnemonics, step-by-step analogies), delivered by either voice or in dialogue. This is non-negotiable.
+- **Substantive and Insightful Content:** Deliver in-depth, insightful content. Minimize "fluff."
+- **Focus EXCLUSIVELY on THIS Part's Outline.** Do NOT discuss topics assigned to other parts.
+- **DO NOT REPEAT content from other parts.**
+- **DO NOT explicitly mention the part number.**
 - Write the script *only* for Part {part}.
-- Use the overall topic context for background and consistency.
-- If the outline calls for a story, weave a compelling hook or anecdote relevant *only* to this part's content. However, ensure explanatory sections still adhere to the structured explanation requirement.
 - Use natural, conversational language optimized for text-to-speech.
-- Create pacing through sentence structure (NOT through audio directions).
-- Write ONLY narrative text - no audio cues, music notes, pauses, or sound effects ([Pause], [Music], [Sound effect], etc.).
-- Create emotional engagement through storytelling *when appropriate*, but ensure clarity and structure in explanations.
-- Use short paragraphs with clear transitions *within* the part's content.
-- Write for the ear - no citations, parentheticals, or formatting.
+- Write ONLY narrative text - no audio cues, music notes, pauses, or sound effects.
 - Write in an engaging, authoritative, and exceptionally clear style.
 {part_instruction}
 
-Write a pure narrative script for Part {part} based *only* on its specific outline and the overall context. Ensure it fits logically within the series without repetition or explicit part mentions. Your main task is to explain the outlined points with structured clarity (using steps, A,B,C, mnemonics) and depth.
+Write a pure narrative script for Part {part} using two voices as specified. Ensure it fits logically within the series. Your main task is to explain the outlined points with structured clarity and depth, using dialogue effectively.
 """
 
     messages = [
@@ -327,61 +333,57 @@ def generate():
 def generate_and_publish():
     logging.info("Received request to /generate_and_publish")
     original_prompt = request.form["idea"].strip()
-    num_parts = int(request.form.get("num_parts", 1))
+    num_parts = int(request.form.get("num_parts", 1)) # This is for the initial script generation
     results = []
 
     if not original_prompt:
         flash("Please enter a topic or prompt.")
         return redirect(url_for("home"))
 
+    # Initial script generation (this part remains largely the same)
     try:
         part_outlines = generate_outline(original_prompt, num_parts)
         overall_title = generate_overall_title(original_prompt)
-        
         base_filename = get_timestamped_filename_base(overall_title)
-        
         input_filepath = INPUTS_DIR / f"{base_filename}.txt"
         with open(input_filepath, "w", encoding="utf-8") as f:
             f.write(original_prompt)
         logging.info(f"Original prompt saved to: {input_filepath}")
-
     except Exception as e:
         logging.exception("Failed during initial generation (outline, title, or input saving) for publish.")
         flash(f"Error during initial generation: {e}")
         return redirect(url_for("home"))
 
-    scripts_data = [None] # Pre-allocate list
-
+    # Script generation for each part
+    scripts_data_list = [None] * num_parts # Changed variable name to avoid conflict
     with ThreadPoolExecutor(max_workers=num_parts) as executor:
         future_to_part = {
-            executor.submit(generate_script, part_outlines[part-1], original_prompt, part, num_parts): part
-            for part in range(1, num_parts + 1)
+            executor.submit(generate_script, part_outlines[part_idx], original_prompt, part_idx + 1, num_parts): part_idx + 1
+            for part_idx in range(num_parts)
         }
-        logging.info(f"Submitted {num_parts} script generation tasks.")
+        logging.info(f"Submitted {num_parts} script generation tasks for generate_and_publish.")
         for future in as_completed(future_to_part):
-            part = future_to_part[future]
+            part_num = future_to_part[future]
             try:
-                script = future.result()
-                # No title extraction needed
-                scripts_data[part-1] = {"script": script}
-                logging.info(f"Completed script generation for part {part}/{num_parts}")
+                script_part_content = future.result()
+                scripts_data_list[part_num-1] = {"script": script_part_content}
+                logging.info(f"Completed script generation for part {part_num}/{num_parts} for generate_and_publish.")
             except Exception as exc:
-                logging.exception(f"Part {part} script generation failed: {exc}")
-                scripts_data[part-1] = None
-
-    # Combine scripts
-    combined_script = ""
-    successful_parts = 0
-    for part_idx, data in enumerate(scripts_data):
-        if data:
-            successful_parts += 1
-            if combined_script:
-                 combined_script += "\n\n" # Add simple newline separation
-            combined_script += data['script']
-        else:
-             logging.error(f"Part {part_idx+1} script data is missing for publishing.")
+                logging.exception(f"Part {part_num} script generation failed for generate_and_publish: {exc}")
+                scripts_data_list[part_num-1] = None
     
-    combined_script = combined_script.strip()
+    combined_script_content = ""
+    successful_parts = 0
+    for part_idx, data in enumerate(scripts_data_list):
+        if data and data['script']:
+            successful_parts += 1
+            if combined_script_content:
+                 combined_script_content += "\n\n"
+            combined_script_content += data['script']
+        else:
+             logging.error(f"Part {part_idx+1} script data is missing for generate_and_publish.")
+    
+    combined_script_content = combined_script_content.strip()
 
     if successful_parts == 0:
         logging.error("All script parts failed generation. Cannot publish.")
@@ -391,63 +393,84 @@ def generate_and_publish():
          logging.warning(f"Publishing incomplete episode: {successful_parts}/{num_parts} parts succeeded.")
          results.append(f"⚠️ Published incomplete episode ({successful_parts}/{num_parts} parts)")
 
-    # Save combined script before TTS
     script_filepath = SCRIPTS_DIR / f"{base_filename}.txt"
     with open(script_filepath, "w", encoding="utf-8") as f:
-        f.write(combined_script)
+        f.write(combined_script_content)
     logging.info(f"Combined script for publishing saved to: {script_filepath}")
 
+    # TTS and Upload for the combined script
     try:
         logging.info(f"Starting TTS and publish for combined episode: {overall_title}")
-        # Generate ONE MP3 from combined script (Parallel TTS chunks)
-        chunks = uploader.chunk_text(combined_script, uploader.CHUNK_SIZE)
-        logging.info(f"Combined script split into {len(chunks)} chunks for TTS")
-        audio_parts = []
+        
+        # Multi-voice TTS processing for combined_script_content
+        raw_segments = re.split(f'({re.escape(VOICE_PRIMARY_TAG)}|{re.escape(VOICE_SECONDARY_TAG)})', combined_script_content)
+        parsed_segments_for_tts = []
+        current_openai_voice = VOICE_PRIMARY_OPENAI
+        idx = 0
+        while idx < len(raw_segments):
+            segment_text = raw_segments[idx].strip()
+            if not segment_text: idx += 1; continue
+            if segment_text == VOICE_PRIMARY_TAG:
+                current_openai_voice = VOICE_PRIMARY_OPENAI
+                if idx + 1 < len(raw_segments) and raw_segments[idx+1].strip():
+                    parsed_segments_for_tts.append((raw_segments[idx+1].strip(), current_openai_voice))
+                idx += 2
+            elif segment_text == VOICE_SECONDARY_TAG:
+                current_openai_voice = VOICE_SECONDARY_OPENAI
+                if idx + 1 < len(raw_segments) and raw_segments[idx+1].strip():
+                    parsed_segments_for_tts.append((raw_segments[idx+1].strip(), current_openai_voice))
+                idx += 2
+            else:
+                parsed_segments_for_tts.append((segment_text, current_openai_voice))
+                idx += 1
+
+        all_tts_tasks_with_voice = []
+        for text_segment, voice_name in parsed_segments_for_tts:
+            segment_chunks = uploader.chunk_text(text_segment, uploader.CHUNK_SIZE)
+            for chunk_for_tts in segment_chunks:
+                all_tts_tasks_with_voice.append((chunk_for_tts, voice_name))
+
+        audio_parts_ordered = [None] * len(all_tts_tasks_with_voice)
+        all_tts_succeeded_publish = True
+
         with ThreadPoolExecutor(max_workers=uploader.MAX_WORKERS) as tts_executor:
-             tts_future_to_idx = {
-                 tts_executor.submit(uploader.tts_chunk, i, c): i
-                 for i, c in enumerate(chunks)
-             }
-             tts_results = [None] * len(chunks)
-             for tts_future in as_completed(tts_future_to_idx):
-                 idx = tts_future_to_idx[tts_future]
-                 try:
-                     _, audio_content = tts_future.result()
-                     tts_results[idx] = audio_content
-                     logging.info(f"TTS chunk {idx+1}/{len(chunks)} completed.")
-                 except Exception as tts_exc:
-                     logging.exception(f"TTS chunk {idx+1} failed: {tts_exc}")
-                     raise tts_exc # Fail fast if any TTS chunk fails
+            future_to_task_idx = {
+                tts_executor.submit(uploader.tts_chunk, f"pub_task_{i}", task_text, task_voice): i
+                for i, (task_text, task_voice) in enumerate(all_tts_tasks_with_voice)
+            }
+            for tts_future in as_completed(future_to_task_idx):
+                task_idx = future_to_task_idx[tts_future]
+                try:
+                    _, audio_content = tts_future.result()
+                    audio_parts_ordered[task_idx] = audio_content
+                except Exception as tts_exc:
+                    logging.exception(f"TTS chunk for pub_task_{task_idx} failed: {tts_exc}")
+                    all_tts_succeeded_publish = False
+                    # Potentially break here if one failure means we shouldn't publish
+                    # For now, it will try to complete others and publish partial if some fail
 
-        audio_parts = tts_results
-        if None in audio_parts:
-             raise ValueError("One or more TTS chunks failed to generate.")
+        if not all_tts_succeeded_publish:
+            results.append("⚠️ Some audio parts failed to generate; episode may be incomplete or silent.")
+        
+        final_audio_segments_publish = [ap for ap in audio_parts_ordered if ap is not None]
+        if not final_audio_segments_publish:
+             raise ValueError("All TTS chunks failed to generate for publishing.")
 
-        # Use base_filename for the MP3
         mp3_filename_with_ext = f"{base_filename}.mp3"
         mp3_path = AUDIO_DIR / mp3_filename_with_ext
-        # mp3_path.parent.mkdir(exist_ok=True) # AUDIO_DIR is already created
-
-        logging.info(f"Writing {len(audio_parts)} audio parts to MP3 file: {mp3_path}")
         with mp3_path.open("wb") as f:
-            for part_audio in audio_parts:
-                if part_audio: f.write(part_audio)
-        logging.info(f"MP3 file written: {mp3_path}")
+            for part_audio in final_audio_segments_publish:
+                f.write(part_audio)
+        logging.info(f"MP3 file written for publishing: {mp3_path}")
 
-        # Upload to Transistor and publish ONE episode using overall_title
-        logging.info("Authorizing upload to Transistor")
-        # mp3_path.name will be base_filename.mp3
         up_url, audio_url = uploader.transistor_authorise(mp3_path.name)
-        logging.info("Uploading MP3 to Transistor S3")
         uploader.transistor_put_audio(up_url, mp3_path)
-        logging.info("Creating episode draft on Transistor")
-        # Generate description using overall_title and original prompt
-        episode_description = uploader.generate_description(overall_title + ": " + original_prompt[:300])
-        ep_id = uploader.transistor_create_episode(overall_title, episode_description, audio_url) # Use overall title
-        logging.info(f"Publishing episode {ep_id} on Transistor")
+        episode_description = uploader.generate_description(overall_title + ": " + original_prompt[:300]) # Using original prompt for description here
+        ep_id = uploader.transistor_create_episode(overall_title, episode_description, audio_url)
         uploader.transistor_publish_episode(ep_id)
         results.append(f"✅ Published “{overall_title}” (ID: {ep_id})")
         logging.info(f"Successfully published episode: {overall_title} (ID: {ep_id})")
+
     except Exception as e:
         logging.exception(f"Failed to TTS/publish combined episode: {overall_title}")
         results.append(f"❌ {overall_title[:40]}… – {e}")
@@ -529,17 +552,17 @@ def generate_mp3(draft_id):
         return redirect(url_for("home"))
 
     title = request.form.get("title", d["title"]).strip()
-    script = request.form.get("script", d["script"]).strip()
+    script_content = request.form.get("script", d["script"]).strip()
     
     # Update draft title and script, and save script file if changed
-    if d["title"] != title or d["script"] != script:
+    if d["title"] != title or d["script"] != script_content:
         d["title"] = title
-        d["script"] = script
+        d["script"] = script_content
         if "base_filename" in d:
             script_filepath = SCRIPTS_DIR / f"{d['base_filename']}.txt"
             try:
                 with open(script_filepath, "w", encoding="utf-8") as f:
-                    f.write(script)
+                    f.write(script_content)
                 logging.info(f"Script updated and saved to: {script_filepath} before MP3 generation.")
                 d["script_filepath"] = str(script_filepath)
             except Exception as e:
@@ -548,31 +571,64 @@ def generate_mp3(draft_id):
         else:
             logging.warning(f"Cannot save updated script for draft {draft_id}, base_filename missing.")
 
-    logging.info("Splitting combined script into chunks for TTS")
-    chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
-    audio_parts = []
-    # Parallelize TTS chunks
+    logging.info("Parsing script for multi-voice TTS")
+    raw_segments = re.split(f'({re.escape(VOICE_PRIMARY_TAG)}|{re.escape(VOICE_SECONDARY_TAG)})', script_content)
+    
+    parsed_segments_for_tts = [] # List of (text, voice_openai_name)
+    current_openai_voice = VOICE_PRIMARY_OPENAI # Default
+    idx = 0
+    while idx < len(raw_segments):
+        segment_text = raw_segments[idx].strip()
+        if not segment_text:
+            idx += 1
+            continue
+
+        if segment_text == VOICE_PRIMARY_TAG:
+            current_openai_voice = VOICE_PRIMARY_OPENAI
+            if idx + 1 < len(raw_segments) and raw_segments[idx+1].strip():
+                parsed_segments_for_tts.append((raw_segments[idx+1].strip(), current_openai_voice))
+            idx += 2
+        elif segment_text == VOICE_SECONDARY_TAG:
+            current_openai_voice = VOICE_SECONDARY_OPENAI
+            if idx + 1 < len(raw_segments) and raw_segments[idx+1].strip():
+                parsed_segments_for_tts.append((raw_segments[idx+1].strip(), current_openai_voice))
+            idx += 2
+        else: # Text not preceded by a known tag, or at the beginning
+            parsed_segments_for_tts.append((segment_text, current_openai_voice))
+            idx += 1
+            
+    all_tts_tasks_with_voice = []
+    for text_segment, voice_name in parsed_segments_for_tts:
+        segment_chunks = uploader.chunk_text(text_segment, uploader.CHUNK_SIZE)
+        for chunk_for_tts in segment_chunks:
+            all_tts_tasks_with_voice.append((chunk_for_tts, voice_name))
+
+    audio_parts_ordered = [None] * len(all_tts_tasks_with_voice)
+    all_succeeded = True
+
     with ThreadPoolExecutor(max_workers=uploader.MAX_WORKERS) as executor:
-        future_to_idx = { executor.submit(uploader.tts_chunk, i, c): i for i, c in enumerate(chunks) }
-        results = [None] * len(chunks)
-        all_succeeded = True
-        for future in as_completed(future_to_idx):
-            idx = future_to_idx[future]
+        future_to_task_idx = {
+            executor.submit(uploader.tts_chunk, f"taskidx_{i}", task_text, task_voice): i
+            for i, (task_text, task_voice) in enumerate(all_tts_tasks_with_voice)
+        }
+        for future in as_completed(future_to_task_idx):
+            task_idx = future_to_task_idx[future]
             try:
                 _, audio_content = future.result()
-                results[idx] = audio_content
-                logging.info(f"TTS chunk {idx+1}/{len(chunks)} completed for generate_mp3.")
+                audio_parts_ordered[task_idx] = audio_content
+                logging.info(f"TTS chunk for task_idx {task_idx} (voice: {all_tts_tasks_with_voice[task_idx][1]}) completed.")
             except Exception as exc:
-                 logging.exception(f"TTS chunk {idx+1} failed in generate_mp3: {exc}")
-                 flash(f"Error generating audio for chunk {idx+1}. MP3 may be incomplete.")
-                 results[idx] = None # Mark as failed
+                 logging.exception(f"TTS chunk for task_idx {task_idx} failed: {exc}")
+                 flash(f"Error generating audio for part of script. MP3 may be incomplete.")
+                 audio_parts_ordered[task_idx] = None
                  all_succeeded = False
+    
+    final_audio_segments = [ap for ap in audio_parts_ordered if ap is not None]
 
-    audio_parts = results
-    if not all_succeeded:
-         flash("One or more audio chunks failed. MP3 generation may be incomplete.")
+    if not all_succeeded or not final_audio_segments:
+         flash("One or more audio chunks failed. MP3 generation may be incomplete or failed.")
+         # Decide if to proceed with partial audio or redirect. For now, proceed.
 
-    # Use base_filename from draft for the MP3
     base_filename = d.get("base_filename")
     if not base_filename:
         logging.error(f"Base filename missing for draft {draft_id}, cannot name MP3 correctly.")
@@ -581,18 +637,19 @@ def generate_mp3(draft_id):
 
     mp3_filename_with_ext = f"{base_filename}.mp3"
     mp3_path = AUDIO_DIR / mp3_filename_with_ext
-    # mp3_path.parent.mkdir(exist_ok=True) # AUDIO_DIR is already created
 
-    logging.info(f"Writing {len(audio_parts)} audio parts to MP3 file: {mp3_path}")
+    logging.info(f"Writing {len(final_audio_segments)} audio segments to MP3 file: {mp3_path}")
     with mp3_path.open("wb") as f:
-        for part_audio in audio_parts:
-            if part_audio:
-                f.write(part_audio)
+        for part_audio in final_audio_segments:
+            f.write(part_audio)
 
     d["mp3_path"] = str(mp3_path)
-    d["mp3_filename"] = mp3_path.name # This will be base_filename.mp3
+    d["mp3_filename"] = mp3_path.name
     logging.info(f"MP3 generated and stored at {mp3_path}")
-    flash("MP3 generated successfully!" + (" (Some parts may be missing)" if not all_succeeded else ""))
+    flash_message = "MP3 generated successfully!"
+    if not all_succeeded:
+        flash_message += " (Some parts may be missing due to errors)"
+    flash(flash_message)
     return redirect(url_for("review", draft_id=draft_id, mp3_ready=True))
 
 
@@ -654,23 +711,21 @@ def generate_and_upload(draft_id):
     logging.info(f"Received request to generate and upload combined draft_id: {draft_id}")
     d = DRAFTS.get(draft_id)
     if not d:
-        # ... handle not found ...
         logging.warning(f"Draft not found: {draft_id}")
         flash("Draft not found")
         return redirect(url_for("home"))
 
     title = request.form.get("title", d["title"]).strip()
-    script = request.form.get("script", d["script"]).strip()
+    script_content = request.form.get("script", d["script"]).strip()
 
-    # Update draft title and script, and save script file if changed
-    if d["title"] != title or d["script"] != script:
+    if d["title"] != title or d["script"] != script_content:
         d["title"] = title
-        d["script"] = script
+        d["script"] = script_content
         if "base_filename" in d:
             script_filepath = SCRIPTS_DIR / f"{d['base_filename']}.txt"
             try:
                 with open(script_filepath, "w", encoding="utf-8") as f:
-                    f.write(script)
+                    f.write(script_content)
                 logging.info(f"Script updated and saved to: {script_filepath} before TTS & upload.")
                 d["script_filepath"] = str(script_filepath)
             except Exception as e:
@@ -679,34 +734,68 @@ def generate_and_upload(draft_id):
         else:
             logging.warning(f"Cannot save updated script for draft {draft_id}, base_filename missing.")
 
-    logging.info("Splitting combined script into chunks for TTS")
-    chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
-    audio_parts = []
-    # Parallelize TTS
+
+    logging.info("Parsing script for multi-voice TTS for generate_and_upload")
+    raw_segments = re.split(f'({re.escape(VOICE_PRIMARY_TAG)}|{re.escape(VOICE_SECONDARY_TAG)})', script_content)
+    parsed_segments_for_tts = []
+    current_openai_voice = VOICE_PRIMARY_OPENAI
+    idx = 0
+    while idx < len(raw_segments):
+        segment_text = raw_segments[idx].strip()
+        if not segment_text:
+            idx += 1
+            continue
+        if segment_text == VOICE_PRIMARY_TAG:
+            current_openai_voice = VOICE_PRIMARY_OPENAI
+            if idx + 1 < len(raw_segments) and raw_segments[idx+1].strip():
+                parsed_segments_for_tts.append((raw_segments[idx+1].strip(), current_openai_voice))
+            idx += 2
+        elif segment_text == VOICE_SECONDARY_TAG:
+            current_openai_voice = VOICE_SECONDARY_OPENAI
+            if idx + 1 < len(raw_segments) and raw_segments[idx+1].strip():
+                parsed_segments_for_tts.append((raw_segments[idx+1].strip(), current_openai_voice))
+            idx += 2
+        else:
+            parsed_segments_for_tts.append((segment_text, current_openai_voice))
+            idx += 1
+            
+    all_tts_tasks_with_voice = []
+    for text_segment, voice_name in parsed_segments_for_tts:
+        segment_chunks = uploader.chunk_text(text_segment, uploader.CHUNK_SIZE)
+        for chunk_for_tts in segment_chunks:
+            all_tts_tasks_with_voice.append((chunk_for_tts, voice_name))
+
+    audio_parts_ordered = [None] * len(all_tts_tasks_with_voice)
+    all_succeeded = True
     with ThreadPoolExecutor(max_workers=uploader.MAX_WORKERS) as executor:
-        future_to_idx = { executor.submit(uploader.tts_chunk, i, c): i for i, c in enumerate(chunks) }
-        results = [None] * len(chunks)
-        all_succeeded = True
-        for future in as_completed(future_to_idx):
-            idx = future_to_idx[future]
+        future_to_task_idx = {
+            executor.submit(uploader.tts_chunk, f"taskidx_{i}", task_text, task_voice): i
+            for i, (task_text, task_voice) in enumerate(all_tts_tasks_with_voice)
+        }
+        for future in as_completed(future_to_task_idx):
+            task_idx = future_to_task_idx[future]
             try:
                 _, audio_content = future.result()
-                results[idx] = audio_content
-                logging.info(f"TTS chunk {idx+1}/{len(chunks)} completed for generate_and_upload.")
+                audio_parts_ordered[task_idx] = audio_content
+                logging.info(f"TTS chunk for task_idx {task_idx} (voice: {all_tts_tasks_with_voice[task_idx][1]}) completed for generate_and_upload.")
             except Exception as exc:
-                 logging.exception(f"TTS chunk {idx+1} failed in generate_and_upload: {exc}")
-                 flash(f"Error generating audio for chunk {idx+1}. Upload cancelled.")
+                 logging.exception(f"TTS chunk for task_idx {task_idx} failed in generate_and_upload: {exc}")
+                 flash(f"Error generating audio for part of script. Upload cancelled.")
                  all_succeeded = False
-                 # Break or continue? Let's break to cancel upload immediately
-                 break
-
+                 break 
+    
     if not all_succeeded:
-         return redirect(url_for("review", draft_id=draft_id)) # Redirect back on failure
+         return redirect(url_for("review", draft_id=draft_id))
 
-    audio_parts = results
+    final_audio_segments = [ap for ap in audio_parts_ordered if ap is not None]
+    if len(final_audio_segments) != len(all_tts_tasks_with_voice): # Should not happen if all_succeeded is true and we broke on first error
+        logging.error("Mismatch in expected audio segments after TTS. Aborting upload.")
+        flash("Critical error during audio generation. Upload cancelled.")
+        return redirect(url_for("review", draft_id=draft_id))
 
-    # Use base_filename from draft for the MP3
+
     base_filename = d.get("base_filename")
+    # ... (base_filename check as before) ...
     if not base_filename:
         logging.error(f"Base filename missing for draft {draft_id}, cannot name MP3 correctly for generate_and_upload.")
         flash("Critical error: Cannot determine MP3 filename. Process cancelled.")
@@ -714,24 +803,23 @@ def generate_and_upload(draft_id):
 
     mp3_filename_with_ext = f"{base_filename}.mp3"
     mp3_path = AUDIO_DIR / mp3_filename_with_ext
-    # mp3_path.parent.mkdir(exist_ok=True) # AUDIO_DIR is already created
 
-    logging.info(f"Writing {len(audio_parts)} audio parts to MP3 file: {mp3_path}")
+    logging.info(f"Writing {len(final_audio_segments)} audio segments to MP3 file: {mp3_path}")
     with mp3_path.open("wb") as f:
-        for part_audio in audio_parts:
-            if part_audio: f.write(part_audio)
+        for part_audio in final_audio_segments:
+            f.write(part_audio)
 
     d["mp3_path"] = str(mp3_path)
-    d["mp3_filename"] = mp3_path.name # This will be base_filename.mp3
+    d["mp3_filename"] = mp3_path.name
 
     try:
         logging.info("Authorizing upload to Transistor")
-        # mp3_path.name will be base_filename.mp3
         up_url, audio_url = uploader.transistor_authorise(mp3_path.name)
         logging.info("Uploading MP3 to Transistor S3")
         uploader.transistor_put_audio(up_url, mp3_path)
         logging.info("Creating episode draft on Transistor")
-        episode_description = uploader.generate_description(title + ": " + script[:300]) # title is overall_title from draft
+        # Use full script_content for description, tags will be included but might be fine for short desc.
+        episode_description = uploader.generate_description(title + ": " + script_content[:300]) 
         ep_id = uploader.transistor_create_episode(title, episode_description, audio_url)
 
         logging.info(f"Draft uploaded to Transistor (ID {ep_id})")
@@ -750,23 +838,22 @@ def approve(draft_id):
     logging.info(f"Received request to approve combined draft_id: {draft_id}")
     d = DRAFTS.get(draft_id) 
     if not d:
-        # ... handle not found ...
         logging.warning(f"Draft not found: {draft_id}")
         flash("Draft not found")
         return redirect(url_for("home"))
 
     title  = request.form.get("title", d["title"]).strip()
-    script = request.form.get("script", d["script"]).strip()
+    script_content = request.form.get("script", d["script"]).strip()
 
-    # Update draft title and script, and save script file if changed
-    if d["title"] != title or d["script"] != script:
+    if d["title"] != title or d["script"] != script_content:
         d["title"] = title
-        d["script"] = script
+        d["script"] = script_content
+        # ... (save script file logic as before) ...
         if "base_filename" in d:
             script_filepath = SCRIPTS_DIR / f"{d['base_filename']}.txt"
             try:
                 with open(script_filepath, "w", encoding="utf-8") as f:
-                    f.write(script)
+                    f.write(script_content)
                 logging.info(f"Script updated and saved to: {script_filepath} before approval.")
                 d["script_filepath"] = str(script_filepath)
             except Exception as e:
@@ -775,46 +862,79 @@ def approve(draft_id):
         else:
             logging.warning(f"Cannot save updated script for draft {draft_id}, base_filename missing.")
 
-    logging.info("Splitting combined script into chunks for TTS")
-    chunks = uploader.chunk_text(script, uploader.CHUNK_SIZE)
-    audio_parts = []
+
+    logging.info("Parsing script for multi-voice TTS for approval")
+    raw_segments = re.split(f'({re.escape(VOICE_PRIMARY_TAG)}|{re.escape(VOICE_SECONDARY_TAG)})', script_content)
+    parsed_segments_for_tts = []
+    current_openai_voice = VOICE_PRIMARY_OPENAI
+    idx = 0
+    while idx < len(raw_segments):
+        segment_text = raw_segments[idx].strip()
+        if not segment_text:
+            idx += 1
+            continue
+        if segment_text == VOICE_PRIMARY_TAG:
+            current_openai_voice = VOICE_PRIMARY_OPENAI
+            if idx + 1 < len(raw_segments) and raw_segments[idx+1].strip():
+                parsed_segments_for_tts.append((raw_segments[idx+1].strip(), current_openai_voice))
+            idx += 2
+        elif segment_text == VOICE_SECONDARY_TAG:
+            current_openai_voice = VOICE_SECONDARY_OPENAI
+            if idx + 1 < len(raw_segments) and raw_segments[idx+1].strip():
+                parsed_segments_for_tts.append((raw_segments[idx+1].strip(), current_openai_voice))
+            idx += 2
+        else:
+            parsed_segments_for_tts.append((segment_text, current_openai_voice))
+            idx += 1
+            
+    all_tts_tasks_with_voice = []
+    for text_segment, voice_name in parsed_segments_for_tts:
+        segment_chunks = uploader.chunk_text(text_segment, uploader.CHUNK_SIZE)
+        for chunk_for_tts in segment_chunks:
+            all_tts_tasks_with_voice.append((chunk_for_tts, voice_name))
+
+    audio_parts_ordered = [None] * len(all_tts_tasks_with_voice)
+    all_succeeded = True
     with ThreadPoolExecutor(max_workers=uploader.MAX_WORKERS) as executor:
-        future_to_idx = { executor.submit(uploader.tts_chunk, i, c): i for i, c in enumerate(chunks) }
-        results = [None] * len(chunks)
-        all_succeeded = True
-        for future in as_completed(future_to_idx):
-            idx = future_to_idx[future]
+        future_to_task_idx = {
+            executor.submit(uploader.tts_chunk, f"taskidx_{i}", task_text, task_voice): i
+            for i, (task_text, task_voice) in enumerate(all_tts_tasks_with_voice)
+        }
+        for future in as_completed(future_to_task_idx):
+            task_idx = future_to_task_idx[future]
             try:
                 _, audio_content = future.result()
-                results[idx] = audio_content
-                logging.info(f"TTS chunk {idx+1}/{len(chunks)} completed for approve.")
+                audio_parts_ordered[task_idx] = audio_content
+                logging.info(f"TTS chunk for task_idx {task_idx} (voice: {all_tts_tasks_with_voice[task_idx][1]}) completed for approve.")
             except Exception as exc:
-                 logging.exception(f"TTS chunk {idx+1} failed in approve: {exc}")
-                 flash(f"Error generating audio for chunk {idx+1}. Upload cancelled.")
+                 logging.exception(f"TTS chunk for task_idx {task_idx} failed in approve: {exc}")
+                 flash(f"Error generating audio for part of script. Upload cancelled.")
                  all_succeeded = False
-                 break # Stop processing TTS on first failure
+                 break 
 
     if not all_succeeded:
-         # Don't remove draft, redirect back
          return redirect(url_for("review", draft_id=draft_id))
 
-    audio_parts = results
+    final_audio_segments = [ap for ap in audio_parts_ordered if ap is not None]
+    if len(final_audio_segments) != len(all_tts_tasks_with_voice):
+        logging.error("Mismatch in expected audio segments after TTS for approval. Aborting.")
+        flash("Critical error during audio generation for approval. Process cancelled.")
+        return redirect(url_for("review", draft_id=draft_id))
 
-    # Use base_filename from draft for the MP3
     base_filename = d.get("base_filename")
+    # ... (base_filename check as before) ...
     if not base_filename:
         logging.error(f"Base filename missing for draft {draft_id}, cannot name MP3 for approval.")
         flash("Critical error: Cannot determine MP3 filename for approval. Process cancelled.")
         return redirect(url_for("review", draft_id=draft_id))
 
-    mp3_filename_with_ext = f"{base_filename}.mp3" # New naming
+    mp3_filename_with_ext = f"{base_filename}.mp3"
     mp3_path = AUDIO_DIR / mp3_filename_with_ext
-    # mp3_path.parent.mkdir(exist_ok=True) # AUDIO_DIR is already created
 
-    logging.info(f"Writing {len(audio_parts)} audio parts to MP3 file: {mp3_path}")
+    logging.info(f"Writing {len(final_audio_segments)} audio segments to MP3 file: {mp3_path}")
     with mp3_path.open("wb") as f:
-        for part_audio in audio_parts:
-            if part_audio: f.write(part_audio)
+        for part_audio in final_audio_segments:
+            f.write(part_audio)
 
     # Upload to Transistor (draft)
     try:
@@ -824,7 +944,7 @@ def approve(draft_id):
         logging.info("Uploading MP3 to Transistor S3")
         uploader.transistor_put_audio(up_url, mp3_path)
         logging.info("Creating episode draft on Transistor")
-        episode_description = uploader.generate_description(title + ": " + script[:300])
+        episode_description = uploader.generate_description(title + ": " + script_content[:300])
         ep_id = uploader.transistor_create_episode(title, episode_description, audio_url)
 
         # Decide if "Approve" should also publish. Currently it doesn't.

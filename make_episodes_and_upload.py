@@ -40,7 +40,7 @@ EPISODE_ENDPOINT   = f"{TX_ROOT}/episodes"
 SCRIPTS_DIR = Path("scripts")
 AUDIO_DIR   = Path("audio")
 MODEL_TTS   = "tts-1" # Standard, fast TTS model
-VOICE       = "alloy"
+DEFAULT_VOICE = "alloy" # Default primary voice, though main.py will specify
 MODEL_CHAT  = "gpt-4o-mini" # Suitable for short description generation
 CHUNK_SIZE  = 3_000
 MAX_WORKERS = 4
@@ -96,16 +96,16 @@ def chunk_text(text: str, size: int):
     logging.info(f"Chunked into {len(chunks)} parts")
     return chunks
 
-def tts_chunk(idx: int, chunk: str):
-    logging.info(f"Requesting TTS for chunk {idx} (length {len(chunk)})")
+def tts_chunk(idx: int, chunk: str, voice: str = DEFAULT_VOICE): # Added voice parameter
+    logging.info(f"Requesting TTS for chunk {idx} (length {len(chunk)}) using voice {voice}")
     r = requests.post(
         TTS_ENDPOINT,
         headers={"Authorization": f"Bearer {OPENAI_KEY}"},
-        json={"model": MODEL_TTS, "voice": VOICE, "format": "mp3", "input": chunk},
+        json={"model": MODEL_TTS, "voice": voice, "format": "mp3", "input": chunk}, # Use passed voice
     )
-    dump_response(r, f"TTS chunk {idx}")
+    dump_response(r, f"TTS chunk {idx} (voice: {voice})")
     r.raise_for_status()
-    logging.info(f"TTS chunk {idx} received, {len(r.content)} bytes")
+    logging.info(f"TTS chunk {idx} (voice: {voice}) received, {len(r.content)} bytes")
     return idx, r.content
 
 def generate_description(title: str):
