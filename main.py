@@ -199,7 +199,7 @@ def generate_script(part_outline: str, original_prompt: str, part: int, total_pa
             # Focus only on Part X content
             part_instruction = f"\n\nFocus *exclusively* on the specific points outlined for Part {part}. Do not repeat content from previous parts. Ensure a smooth transition from the likely topic of the previous part and end with a compelling transition hinting at the next part's topic without explicitly stating 'next part'."
 
-    system_prompt = f"""You are a master storyteller and expert explainer, writing a podcast script for two voices. Your primary goal is to make complex topics understandable, memorable, and engaging through dialogue. Write a pure narrative script for PART {part} of a {total_parts}-part series.
+    system_prompt = f"""You are a master storyteller and expert explainer, writing a podcast script for two voices. Your primary goal is to make complex topics understandable, memorable, and exceptionally engaging through a dynamic, witty dialogue. Write a pure narrative script for PART {part} of a {total_parts}-part series.
 
 **Overall Topic Context (from original user prompt):**
 {original_prompt}
@@ -209,13 +209,17 @@ def generate_script(part_outline: str, original_prompt: str, part: int, total_pa
 
 **CRITICAL Instructions for Two-Voice Script:**
 - **Assign Lines to Voices:** Use two distinct voices:
-    - **{VOICE_PRIMARY_TAG}**: The main narrator, a female voice. This voice will carry the primary thread of the content.
-    - **{VOICE_SECONDARY_TAG}**: An expert commentator or co-host, a male voice. This voice should provide additional insights, ask clarifying questions, offer different perspectives, or summarize key points.
-- **Dynamic Interaction Style:** Infuse a playfully challenging, slightly flirty, and fun dynamic between {VOICE_PRIMARY_TAG} and {VOICE_SECONDARY_TAG}. They should sound like they enjoy working together, occasionally teasing, gently questioning each other's points before building on them, or adding a witty remark. This tension should be light-hearted and serve to make the explanations more engaging, not to create actual conflict or derail the topic. For example, {VOICE_SECONDARY_TAG} might say, "Are you sure about that, {VOICE_PRIMARY_TAG}? I thought it was more like..." and {VOICE_PRIMARY_TAG} could respond with a confident clarification that also acknowledges the point, or vice-versa.
-- **Natural Dialogue:** Create a natural, flowing dialogue. The interaction should enhance understanding and engagement. It doesn't need to be strictly alternating lines for the entire script, but intersperse dialogue segments throughout the part, especially when explaining complex topics or transitioning between ideas.
+    - **{VOICE_PRIMARY_TAG}**: The main narrator, a female voice. Often initiates topics.
+    - **{VOICE_SECONDARY_TAG}**: An expert commentator or co-host, a male voice. Often provides deeper dives, alternative perspectives, or playful challenges.
+- **Dynamic Interaction Style - Edgy & Engaging Banter:**
+    - **Witty & Playful Challenges:** {VOICE_PRIMARY_TAG} and {VOICE_SECONDARY_TAG} should engage in sharp, witty banter. They should playfully "mess with each other," challenge assumptions, and offer slightly contrasting viewpoints that spark interest. Think clever retorts, light teasing, and a sense of fun competition in explaining things best.
+    - **"Tastefully Edgy":** The dynamic can be a bit "edgy" – they can gently poke fun at each other's explanations or lead each other on before revealing a key point. This should be humorous and intelligent, not genuinely aggressive or offensive. The "controversy" should be in their interaction style, not in problematic content.
+    - **Fun & Engaging, Not Overly Dramatic:** The goal is to make listeners feel like they're eavesdropping on a fun, spirited conversation between two very smart people who respect each other but also love a good intellectual spar. Avoid melodrama; keep it light, engaging, and focused on making the educational content more captivating.
+    - **Example Flow:** {VOICE_PRIMARY_TAG} might present a concept. {VOICE_SECONDARY_TAG} could interject with, "Hold on, are you *really* saying it's that simple? I bet there's a catch you're not telling us yet, {VOICE_PRIMARY_TAG}..." {VOICE_PRIMARY_TAG} might then respond with a playful, "Oh, you know me too well, {VOICE_SECONDARY_TAG}! The catch is..." or "Alright, smarty pants, what's your brilliant take then?"
+- **Natural Dialogue:** Create a natural, flowing dialogue. The interaction should enhance understanding and engagement.
 - **Clear Delineation:** Start each line or paragraph with the appropriate tag (e.g., `{VOICE_PRIMARY_TAG} Today, we'll explore...` or `{VOICE_SECONDARY_TAG} That's a great point, and I'd add...`).
-- **MANDATORY Structured Explanations:** For any point in this part's outline that involves explaining a concept, process, data, or any new information, YOU ARE REQUIRED to use structured teaching techniques (numbered lists, lettered lists, mnemonics, step-by-step analogies), delivered by either voice or in dialogue. This is non-negotiable.
-- **Substantive and Insightful Content:** Deliver in-depth, insightful content. Minimize "fluff."
+- **MANDATORY Structured Explanations:** Even amidst the banter, when explaining a concept, process, data, or any new information, YOU ARE REQUIRED to use structured teaching techniques (numbered lists, lettered lists, mnemonics, step-by-step analogies), delivered by either voice or in dialogue. This is non-negotiable. The banter can lead into or out of these structured explanations.
+- **Substantive and Insightful Content:** Deliver in-depth, insightful content. Minimize "fluff." The banter should enhance, not replace, substance.
 - **Focus EXCLUSIVELY on THIS Part's Outline.** Do NOT discuss topics assigned to other parts.
 - **DO NOT REPEAT content from other parts.**
 - **DO NOT explicitly mention the part number.**
@@ -225,7 +229,7 @@ def generate_script(part_outline: str, original_prompt: str, part: int, total_pa
 - Write in an engaging, authoritative, and exceptionally clear style.
 {part_instruction}
 
-Write a pure narrative script for Part {part} using two voices with the specified dynamic. Ensure it fits logically within the series. Your main task is to explain the outlined points with structured clarity and depth, using an engaging and fun dialogue.
+Write a pure narrative script for Part {part} using two voices with the specified dynamic: witty, playfully challenging, and engaging. Ensure it fits logically within the series. Your main task is to explain the outlined points with structured clarity and depth, using this spirited dialogue to make it exceptionally fun and memorable.
 """
 
     messages = [
