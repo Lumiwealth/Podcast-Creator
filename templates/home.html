@@ -1,14 +1,66 @@
-
 {% extends "base.html" %}
 {% block content %}
-<form method="post" action="/generate" class="card p-4 shadow-lg">
+<script>
+console.log("Loaded home.html");
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("DOM fully loaded and parsed (home.html)");
+    const form = document.getElementById('episodeForm');
+    let isSubmitting = false; // Flag to prevent double submission
+
+    const buttons = form.querySelectorAll("button[type=submit]");
+    buttons.forEach(btn => {
+        btn.addEventListener("click", function(e) {
+            e.preventDefault(); // Prevent default submission unconditionally
+
+            if (isSubmitting) {
+                console.log("Submission already in progress, preventing click.");
+                return; // Stop if already submitting
+            }
+            isSubmitting = true; // Set flag immediately
+
+            // Set the action and loading text based on the button clicked
+            if (this.innerText.includes("Generate Draft")) {
+                form.action = "/generate";
+                console.log("Set form action to /generate");
+                this.innerHTML='Generating... (this may take a minute)';
+            } else if (this.innerText.includes("Publish")) {
+                form.action = "/generate_and_publish";
+                console.log("Set form action to /generate_and_publish");
+                this.innerHTML='Publishing... (this may take a few minutes)';
+            }
+
+            this.disabled = true; // Disable button after click
+            console.log("Button text updated and disabled, explicitly submitting form.");
+            form.submit(); // Explicitly submit the form
+        });
+    });
+});
+</script>
+<form id="episodeForm" method="post" action="/generate" class="card p-4 shadow-lg">
     <div class="mb-3">
-        <label class="form-label" for="idea">Episode idea(s) - one per line</label>
-        <textarea class="form-control" id="idea" name="idea" rows="12" required placeholder="Put each episode idea on its own line"></textarea>
+        <label class="form-label" for="idea">Episode Topic / Prompt</label>
+        <textarea class="form-control" id="idea" name="idea" rows="12" required placeholder="Enter the main topic, theme, or rough script outline here..."></textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="num_parts">Break into how many parts?</label>
+        <select class="form-select" id="num_parts" name="num_parts">
+            <option value="1">1 (single episode)</option>
+            <option value="2">2 parts (~8 min)</option>
+            <option value="3">3 parts (~12 min)</option>
+            <option value="4">4 parts (~16 min)</option>
+            <option value="5" selected>5 parts (~20 min)</option>
+            <option value="6">6 parts (~24 min)</option>
+            <option value="7">7 parts (~28 min)</option>
+            <option value="8">8 parts (~32 min)</option>
+        </select>
     </div>
     <div class="d-flex gap-2">
-        <button class="btn btn-primary flex-grow-1" type="submit" onclick="this.disabled=true; this.innerHTML='Generating... (this may take a minute)'; this.form.submit();">Generate Draft</button>
-        <button class="btn btn-success flex-grow-1" formaction="/generate_and_publish" formmethod="post" onclick="this.disabled=true; this.innerHTML='Publishing... (this may take a few minutes)'; this.form.submit();">Generate & Publish All</button>
+        <button class="btn btn-primary flex-grow-1" type="submit">
+            Generate Draft
+        </button>
+        <button class="btn btn-success flex-grow-1" type="submit">
+            Generate & Publish All
+        </button>
     </div>
 </form>
 {% endblock %}

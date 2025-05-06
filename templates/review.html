@@ -1,10 +1,59 @@
-
 {% extends "base.html" %}
 {% block content %}
+<script>
+console.log("Loaded review.html");
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("DOM fully loaded and parsed (review.html)");
+    let isSubmitting = false;
+    const form = document.querySelector('form');
+
+    const buttons = form.querySelectorAll('button[formaction]');
+    buttons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default submission unconditionally
+
+            if (isSubmitting) {
+                console.log("Review submission already in progress, preventing click.");
+                return; // Stop if already submitting
+            }
+            isSubmitting = true; // Set flag immediately
+
+            // Set the form's action based on the button's formaction
+            form.action = this.getAttribute('formaction');
+            console.log(`Set form action to: ${form.action}`);
+
+            // Update button text based on action
+            if (form.action.includes('/generate_mp3')) {
+                this.innerHTML = 'Generating MP3...';
+            } else if (form.action.includes('/generate_and_upload')) {
+                this.innerHTML = 'Generating MP3 & Uploading Draft...';
+            } else if (form.action.includes('/upload')) {
+                this.innerHTML = 'Uploading...';
+            } else if (form.action.includes('/revise')) {
+                // Check for feedback before submitting revise
+                const feedbackTextarea = form.querySelector('textarea[name="feedback"]');
+                 if (!feedbackTextarea || !feedbackTextarea.value.trim()) {
+                     alert('Please provide feedback for regeneration.');
+                     this.innerHTML = 'Regenerate Script'; // Reset button text
+                     this.disabled = false; // Re-enable
+                     isSubmitting = false; // Reset flag
+                     return; // Stop submission
+                 }
+                this.innerHTML = 'Regenerating...';
+            }
+
+            this.disabled = true; // Disable the clicked button
+            console.log("Button disabled, action set, explicitly submitting form.");
+            form.submit(); // Explicitly submit the form
+        });
+    });
+});
+</script>
 <div class="top-nav">
     <a href="/" class="btn btn-outline-primary">Generate New Draft</a>
 </div>
 
+<!-- Default action is /approve, but will be overridden by button clicks -->
 <form method="post" action="/approve/{{ draft_id }}" class="card shadow-sm p-4">
     {% if request.args.get('uploaded') %}
     <div class="alert alert-success">
@@ -22,16 +71,20 @@
     <div class="primary-actions d-flex gap-2">
         {% if request.args.get('mp3_ready') or request.args.get('uploaded') %}
             <a href="/audio/{{ draft['mp3_filename'] }}" download target="_blank" class="btn btn-info btn-lg">Download MP3</a>
-            <button formaction="/upload/{{ draft_id }}" formmethod="post" class="btn btn-success btn-lg" onclick="this.disabled=true; this.innerHTML='Publishing...'; this.form.submit();">Upload to Transistor</button>
+            <!-- Ensure type="submit" -->
+            <button type="submit" formaction="/upload/{{ draft_id }}" formmethod="post" class="btn btn-success btn-lg">Upload to Transistor</button>
         {% else %}
-            <button formaction="/generate_mp3/{{ draft_id }}" formmethod="post" class="btn btn-primary btn-lg" onclick="this.disabled=true; this.innerHTML='Generating MP3...'; this.form.submit();">Generate MP3</button>
-            <button formaction="/generate_and_upload/{{ draft_id }}" formmethod="post" class="btn btn-success btn-lg" onclick="this.disabled=true; this.innerHTML='Generating MP3 & Uploading Draft...'; this.form.submit();">Generate MP3 & Upload Draft</button>
+            <!-- Ensure type="submit" -->
+            <button type="submit" formaction="/generate_mp3/{{ draft_id }}" formmethod="post" class="btn btn-primary btn-lg">Generate MP3</button>
+            <!-- Ensure type="submit" -->
+            <button type="submit" formaction="/generate_and_upload/{{ draft_id }}" formmethod="post" class="btn btn-success btn-lg">Generate MP3 & Upload Draft</button>
         {% endif %}
     </div>
     <div class="mt-4">
         <label class="form-label">Feedback for regeneration</label>
         <textarea class="form-control" name="feedback" rows="3" placeholder="Enter feedback to guide script regeneration..."></textarea>
-        <button formaction="/revise/{{ draft_id }}" formmethod="post" class="btn btn-warning btn-lg mt-3" onclick="this.disabled=true; this.innerHTML='Regenerating...'; this.form.submit();">Regenerate Script</button>
+        <!-- Ensure type="submit" -->
+        <button type="submit" formaction="/revise/{{ draft_id }}" formmethod="post" class="btn btn-warning btn-lg mt-3">Regenerate Script</button>
     </div>
 </form>
 {% endblock %}

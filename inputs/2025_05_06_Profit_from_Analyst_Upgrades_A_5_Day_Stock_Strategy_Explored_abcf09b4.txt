@@ -1,0 +1,126 @@
+import os
+from datetime import datetime
+
+from lumibot.strategies.strategy import Strategy
+from lumibot.traders import Trader
+from lumibot.entities import Asset, Order, TradingFee
+from lumibot.backtesting import YahooDataBacktesting
+from lumibot.credentials import IS_BACKTESTING
+from lumibot.components.perplexity_helper import PerplexityHelper
+
+"""
+Strategy Description
+--------------------
+This strategy uses PerplexityHelper daily before market open to find stocks
+receiving significant analyst upgrades ('Buy' or 'Strong Buy'). It buys those
+stocks once per day if not already held, allocating an equal portion of cash to
+each. It holds positions for exactly 5 trading days, then sells.
+
+This code was generated based on the user prompt: 'Use Perplexity daily before the market opens to find stocks receiving significant analyst upgrades ('Buy'/'Strong Buy'). Check daily during trading hours: buy upgraded stocks if not held. Hold for exactly 5 trading days, then sell.'
+"""
+class AnalystUpgradeStrategy(Strategy):
+    parameters = {}
+
+    def initialize(self):
+        # Set up PerplexityHelper with API key from environment
+        api_key = os.getenv('PERPLEXITY_API_KEY', None)
+        self.perplexity_helper = PerplexityHelper(api_key)
+        if api_key is None:
+            self.log_message("Warning: PERPLEXITY_API_KEY is not set", color="yellow", broadcast=True)
+        # Run the on_trading_iteration method once per day
+        self.sleeptime = "1D"
+        # Prepare storage for purchases and sell dates
+        if not hasattr(self.vars, 'purchases'):
+            self.vars.purchases = {}    # symbol -> purchase date
+        if not hasattr(self.vars, 'sell_dates'):
+            self.vars.sell_dates = {}   # symbol -> target sell date
+        # Daily control variables
+        self.vars.daily_upgrades = []   # symbols upgraded today
+        self.vars.processed_date = None # date when we fetched upgrades
+        self.vars.traded_today = False  # flag to avoid repeat buys
+
+    def before_market_opens(self):
+        # Fetch today's analyst upgrades before the market opens
+        dt = self.get_datetime()
+        today = dt.date()
+        if self.vars.processed_date != today:
+            query = "Which stocks received significant analyst upgrades (Buy or Strong Buy) today?"
+            news_data = self.perplexity_helper.execute_financial_news_query(query)
+            items = news_data.get("items", [])
+            # Extract symbols from the AI response
+            symbols = [item.get("symbol") for item in items if item.get("symbol")]
+            self.vars.daily_upgrades = symbols
+            self.vars.processed_date = today
+            self.vars.traded_today = False
+            self.log_message(f"Analyst upgrades for {today}: {symbols}", color="blue")
+
+    def on_trading_iteration(self):
+        # Always check if any positions need to be sold after 5 trading days
+        dt = self.get_datetime()
+        today = dt.date()
+        for symbol, sell_date in list(self.vars.sell_dates.items()):
+            if today >= sell_date:
+                asset = Asset(symbol, asset_type=Asset.AssetType.STOCK)
+                position = self.get_position(asset)
+                if position and position.quantity > 0:
+                    order = self.create_order(asset, position.quantity, Order.OrderSide.SELL)
+                    self.submit_order(order)
+                    # Marker for sell event
+                    self.add_marker("Sell", self.get_last_price(asset), color="red", symbol="arrow-down")
+                    self.log_message(f"Sold {symbol} after holding 5 days", color="red")
+                # Remove from tracking
+                del self.vars.sell_dates[symbol]
+                del self.vars.purchases[symbol]
+        # Buy upgraded stocks once per day during trading hours
+        if self.vars.processed_date == today and not self.vars.traded_today:
+            upgrades = self.vars.daily_upgrades
+            cash = self.get_cash()
+            if upgrades and cash > 0:
+                portion = cash / len(upgrades)
+                for symbol in upgrades:
+                    asset = Asset(symbol, asset_type=Asset.AssetType.STOCK)
+                    position = self.get_position(asset)
+                    # Only buy if we don't already hold this stock
+                    if position is None or position.quantity == 0:
+                        price = self.get_last_price(asset)
+                        if price:
+                            shares = int(portion // price)
+                            if shares > 0:
+                                order = self.create_order(asset, shares, Order.OrderSide.BUY)
+                                self.submit_order(order)
+                                # Marker for buy event
+                                self.add_marker("Buy", price, color="green", symbol="arrow-up")
+                                self.log_message(f"Bought {shares} shares of {symbol}", color="green")
+                                # Track when to sell (5 trading days later)
+                                purchase_date = today
+                                self.vars.purchases[symbol] = purchase_date
+                                sell_date = purchase_date
+                                for _ in range(5):
+                                    sell_date = self.get_next_trading_day(sell_date.isoformat())
+                                self.vars.sell_dates[symbol] = sell_date
+                        else:
+                            self.log_message(f"Price data unavailable for {symbol}", color="yellow")
+            self.vars.traded_today = True
+        # Add a line showing portfolio value for visualization
+        self.add_line("Portfolio Value", self.get_portfolio_value(), color="black")
+
+if __name__ == "__main__":
+    if IS_BACKTESTING:
+        # Backtesting environment
+        trading_fee = TradingFee(percent_fee=0.001)
+        AnalystUpgradeStrategy.backtest(
+            datasource_class=YahooDataBacktesting,
+            benchmark_asset=Asset("SPY", Asset.AssetType.STOCK),
+            buy_trading_fees=[trading_fee],
+            sell_trading_fees=[trading_fee],
+            quote_asset=Asset("USD", Asset.AssetType.FOREX),
+            parameters=None
+        )
+    else:
+        # Live trading environment
+        trader = Trader()
+        strategy = AnalystUpgradeStrategy(
+            quote_asset=Asset("USD", Asset.AssetType.FOREX)
+        )
+        trader.add_strategy(strategy)
+        trader.run_all()
