@@ -192,7 +192,7 @@ def generate_script(part_outline: str, original_prompt: str, part: int, total_pa
             # Focus only on Part X content
             part_instruction = f"\n\nFocus *exclusively* on the specific points outlined for Part {part}. Do not repeat content from previous parts. Ensure a smooth transition from the likely topic of the previous part and end with a compelling transition hinting at the next part's topic without explicitly stating 'next part'."
 
-    system_prompt = f"""You are a master storyteller and expert explainer, writing a podcast script. Write a pure narrative script for PART {part} of a {total_parts}-part series.
+    system_prompt = f"""You are a master storyteller and expert explainer, writing a podcast script. Your primary goal is to make complex topics understandable and memorable. Write a pure narrative script for PART {part} of a {total_parts}-part series.
 
 **Overall Topic Context (from original user prompt):**
 {original_prompt}
@@ -201,25 +201,24 @@ def generate_script(part_outline: str, original_prompt: str, part: int, total_pa
 {part_outline}
 
 **CRITICAL Instructions:**
+- **Prioritize Structured, Memorable Explanations:** When explaining any concept, process, or technical point from the outline, YOU MUST break it down. Use clear, numbered steps (1, 2, 3), lettered points (A, B, C), simple mnemonics, or relatable analogies. This is crucial for listener understanding and retention. For example, instead of a long paragraph, think "There are three key things to remember here: First... Second... Third..." or "Let's use the acronym 'XYZ' to recall this process...". Make this a core part of your explanation style.
+- **Substantive and Insightful Content:** Deliver in-depth, insightful content. Go beyond surface-level descriptions; explore the 'why' and 'how,' offering valuable takeaways. Minimize "fluff" and maximize meaningful information. Your structured explanations should deliver this substance.
 - **Focus EXCLUSIVELY on the points listed in the 'Specific Outline for THIS Part'.** Do NOT discuss topics assigned to other parts.
 - **DO NOT REPEAT content from other parts.** Assume the listener has heard the previous parts.
 - **DO NOT explicitly mention the part number.** Avoid phrases like "In Part {part}...", "This is Part {part}", "Continuing from Part {part-1}...", "In the next part...". The script should flow naturally as one continuous narrative when combined later.
-- **Clear & Memorable Explanations:** When covering complex or technical points from the outline, prioritize clarity and deep understanding. Use structured explanations (e.g., steps A,B,C; 1,2,3), insightful analogies, or mnemonics to make the core concepts easy to grasp and retain. Avoid superficiality.
-- **Substantive and Insightful Content:** While the narrative should be engaging, the primary focus is on delivering substantive, insightful content related to this part's outline. Go beyond surface-level descriptions; explore the 'why' and 'how,' offering valuable takeaways. Minimize "fluff" and maximize meaningful information.
 - Write the script *only* for Part {part}.
 - Use the overall topic context for background and consistency.
-- Follow with a compelling hook or anecdote relevant *only* to this part's content.
-- Weave together narratives based *only* on this part's outline.
+- If the outline calls for a story, weave a compelling hook or anecdote relevant *only* to this part's content. However, ensure explanatory sections still adhere to the structured explanation requirement.
 - Use natural, conversational language optimized for text-to-speech.
 - Create pacing through sentence structure (NOT through audio directions).
 - Write ONLY narrative text - no audio cues, music notes, pauses, or sound effects ([Pause], [Music], [Sound effect], etc.).
-- Create emotional engagement through storytelling *when appropriate for the content*, but prioritize clear, substantive explanations for technical topics.
+- Create emotional engagement through storytelling *when appropriate*, but ensure clarity and structure in explanations.
 - Use short paragraphs with clear transitions *within* the part's content.
 - Write for the ear - no citations, parentheticals, or formatting.
-- Write in an engaging, authoritative, and clear style.
+- Write in an engaging, authoritative, and exceptionally clear style.
 {part_instruction}
 
-Write a pure narrative script for Part {part} based *only* on its specific outline and the overall context. Ensure it fits logically within the series without repetition or explicit part mentions. Aim for a length appropriate for one part of the series, focusing on depth and clarity.
+Write a pure narrative script for Part {part} based *only* on its specific outline and the overall context. Ensure it fits logically within the series without repetition or explicit part mentions. Your main task is to explain the outlined points with structured clarity (using steps, A,B,C, mnemonics) and depth.
 """
 
     messages = [
